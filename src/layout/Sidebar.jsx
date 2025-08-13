@@ -1,7 +1,7 @@
 import { FaUserFriends } from "react-icons/fa";
 import { MdInventory } from "react-icons/md";
-import { MdOutlineInventory2 } from "react-icons/md";
 import { MdSpaceDashboard } from "react-icons/md";
+import { FaSignOutAlt } from "react-icons/fa";
 import React from "react";
 
 const Sidebar = ({ children }) => {
@@ -32,7 +32,7 @@ const Sidebar = ({ children }) => {
         </div>
         <div className="flex-1">
           <div className="flex flex-row gap-3 items-center pl-10 hover:bg-gray-100 rounded-l-2xl w-full py-3.5 cursor-pointer">
-            <FaUserFriends size={28} className="" />
+            <FaSignOutAlt size={28} className="" />
             <p className="font-poppins text-[18px] text-gray-800">Log Out</p>
           </div>
         </div>

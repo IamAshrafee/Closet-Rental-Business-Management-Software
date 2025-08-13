@@ -1,6 +1,6 @@
 import React from "react";
-import Home from "./pages/Home";
 import { createBrowserRouter, RouterProvider } from "react-router";
+import Home from "./pages/Home";
 import Stock from "./pages/Stock";
 import Customers from "./pages/Customers";
 
@@ -20,11 +20,7 @@ const router = createBrowserRouter([
 ]);
 
 const App = () => {
-  return (
-    <>
-      <RouterProvider router={router} />,
-    </>
-  );
+  return <RouterProvider router={router} />;
 };
 
 export default App;

@@ -3,8 +3,13 @@ import { MdInventory } from "react-icons/md";
 import { MdSpaceDashboard } from "react-icons/md";
 import { FaSignOutAlt } from "react-icons/fa";
 import React from "react";
+import { NavLink } from "react-router";
 
 const Sidebar = ({ children }) => {
+  const activeLink =
+    "flex flex-row gap-3 items-center pl-10 bg-gray-100 rounded-l-2xl w-full py-3.5 cursor-pointer border-r-4 border-r-gray-800";
+  const normalLink =
+    "flex flex-row gap-3 items-center pl-10 hover:bg-gray-100 rounded-l-2xl w-full py-3.5 cursor-pointer";
   return (
     <div className="flex flex-row gap-10">
       <div className="h-[100dvh] pl-7 py-7 border-r border-r-gray-200 flex flex-col justify-start">
@@ -17,18 +22,27 @@ const Sidebar = ({ children }) => {
           </p>
         </div>
         <div className="flex-3 flex flex-col gap-0.5 items-center ">
-          <div className="flex flex-row gap-3 items-center pl-10 hover:bg-gray-100 rounded-l-2xl w-full py-3.5 cursor-pointer">
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) => (isActive ? activeLink : normalLink)}
+          >
             <MdSpaceDashboard size={30} className="" />
             <p className="font-poppins text-[18px] text-gray-800">Dashboard</p>
-          </div>
-          <div className="flex flex-row gap-3 items-center pl-10 hover:bg-gray-100 rounded-l-2xl w-full py-3.5 cursor-pointer">
+          </NavLink>
+          <NavLink
+            to="/stock"
+            className={({ isActive }) => (isActive ? activeLink : normalLink)}
+          >
             <MdInventory size={28} className="" />
             <p className="font-poppins text-[18px] text-gray-800">Stock</p>
-          </div>
-          <div className="flex flex-row gap-3 items-center pl-10 hover:bg-gray-100 rounded-l-2xl w-full py-3.5 cursor-pointer">
+          </NavLink>
+          <NavLink
+            to="/customers"
+            className={({ isActive }) => (isActive ? activeLink : normalLink)}
+          >
             <FaUserFriends size={28} className="" />
             <p className="font-poppins text-[18px] text-gray-800">Customer</p>
-          </div>
+          </NavLink>
         </div>
         <div className="flex-1">
           <div className="flex flex-row gap-3 items-center pl-10 hover:bg-gray-100 rounded-l-2xl w-full py-3.5 cursor-pointer">

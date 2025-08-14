@@ -1,6 +1,6 @@
 import React from 'react';
 import { IoMdClose } from 'react-icons/io';
-import { FiPhone, FiMail, FiMapPin, FiUser, FiUsers, FiBriefcase, FiLink } from 'react-icons/fi';
+import { FiPhone, FiMapPin, FiUser, FiUsers, FiBriefcase, FiLink } from 'react-icons/fi';
 
 const DetailItem = ({ icon, label, value }) => {
     if (!value) return null;
@@ -33,26 +33,35 @@ const CustomerInformationPopup = ({ customer, onClose }) => {
     } = customer;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center backdrop-blur-sm p-4 z-50">
-            <div className="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-11/12 md:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-6 border-b pb-4">
+        <div 
+            className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center backdrop-blur-sm p-4 z-50"
+            onClick={onClose}
+        >
+            <div 
+                className="bg-white rounded-xl shadow-2xl w-11/12 md:w-full max-w-2xl max-h-[90vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex justify-between items-center p-6 border-b border-gray-200">
                     <h2 className="text-3xl font-bold font-poppins text-gray-800">{name}</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-800 transition-colors duration-200">
                         <IoMdClose size={28} />
                     </button>
                 </div>
 
-                <div className="space-y-4">
+                {/* Content */}
+                <div className="space-y-4 overflow-y-auto p-6 flex-grow">
                     <DetailItem icon={<FiPhone />} label="Phone Number" value={phone} />
                     <DetailItem icon={<FiPhone />} label="Alternative Phone" value={altPhone} />
                     <DetailItem icon={<FiUser />} label="NID/Passport/Birth Cert." value={nid} />
-                    <DetailItem icon={<FiUsers />} label={`${parentType}'s NID`} value={parentNid} />
+                    <DetailItem icon={<FiUsers />} label={`${parentType || 'Parent'}'s NID`} value={parentNid} />
                     <DetailItem icon={<FiBriefcase />} label="Husband's NID" value={husbandNid} />
                     <DetailItem icon={<FiLink />} label="Facebook Profile" value={fbId} />
                     <DetailItem icon={<FiMapPin />} label="Address" value={address} />
                 </div>
 
-                <div className="mt-8 flex justify-end">
+                {/* Footer */}
+                <div className="flex justify-end p-6 border-t border-gray-200">
                     <button 
                         type="button" 
                         onClick={onClose} 

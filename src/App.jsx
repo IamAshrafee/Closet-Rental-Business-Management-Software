@@ -3,11 +3,15 @@ import { createBrowserRouter, RouterProvider } from "react-router";
 import Home from "./pages/Home";
 import Stock from "./pages/Stock";
 import Customers from "./pages/Customers";
+import Bookings from "./pages/Bookings";
 import AddItemsForm from "./modals/AddItemsForm";
-import StockItemCard from "./cards/StockItemCard";
-
+import { Navigate } from "react-router";
 
 const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Navigate to="/dashboard" replace />,
+  },
   {
     path: "/dashboard",
     element: <Home />,
@@ -21,7 +25,11 @@ const router = createBrowserRouter([
     element: <Customers />,
   },
   {
-    path: "/AddItemsForm",
+    path: "/bookings",
+    element: <Bookings />,
+  },
+  {
+    path: "/add-item", // More descriptive route
     element: <AddItemsForm />,
   },
 ]);

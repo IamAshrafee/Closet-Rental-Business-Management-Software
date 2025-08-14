@@ -1,19 +1,31 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { IoMdClose } from 'react-icons/io';
 
 const AddCustomerPopup = ({ onClose }) => {
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm p-4">
-      <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg w-11/12 md:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4"
+      onClick={onClose}
+    >
+      <form 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-xl shadow-2xl w-11/12 md:w-full max-w-2xl max-h-[90vh] flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800">Add New Customer</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="text-gray-500 hover:text-gray-800 transition-colors"
+            aria-label="Close form"
+          >
             <IoMdClose size={24} />
           </button>
         </div>
 
-        <form className="space-y-6">
+        {/* Form Content (Scrollable) */}
+        <div className="space-y-6 overflow-y-auto p-6 flex-grow">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Customer Name */}
             <div>
@@ -75,14 +87,14 @@ const AddCustomerPopup = ({ onClose }) => {
             <label htmlFor="address" className="block text-sm font-medium text-gray-700">Address</label>
             <textarea id="address" rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"></textarea>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-4">
-            <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
-            <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save</button>
-          </div>
-        </form>
-      </div>
+        {/* Footer */}
+        <div className="flex justify-end space-x-4 p-6 border-t border-gray-200">
+          <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+          <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save</button>
+        </div>
+      </form>
     </div>
   );
 };

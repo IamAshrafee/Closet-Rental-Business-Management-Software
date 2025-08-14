@@ -36,6 +36,14 @@ const SidebarContent = ({ onLinkClick, activeLink, normalLink }) => (
           <FaUserFriends size={28} />
           <p className="font-poppins text-[18px]">Customers</p>
         </NavLink>
+        <NavLink
+          to="/bookings"
+          className={({ isActive }) => (isActive ? activeLink : normalLink)}
+          onClick={onLinkClick}
+        >
+          <FaUserFriends size={28} />
+          <p className="font-poppins text-[18px]">Bookings</p>
+        </NavLink>
       </div>
     </div>
     <div>

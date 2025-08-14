@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { IoMdClose } from 'react-icons/io';
 
 const AddItemsForm = ({ onClose, onSubmit }) => {
-  // Form state
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -28,73 +27,52 @@ const AddItemsForm = ({ onClose, onSubmit }) => {
     description: '',
     photo: null
   });
-
-  // Validation errors
   const [errors, setErrors] = useState({});
 
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value
     }));
-    
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
 
-  // Handle radio button changes
   const handleRadioChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Handle file upload
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
         setErrors(prev => ({ ...prev, photo: 'File size must be less than 10MB' }));
         return;
       }
-      
-      // Validate file type
       if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
         setErrors(prev => ({ ...prev, photo: 'Only JPG, PNG, and GIF files are allowed' }));
         return;
       }
-      
       setFormData(prev => ({ ...prev, photo: file }));
       setErrors(prev => ({ ...prev, photo: null }));
     }
   };
 
-  // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
-    // Required fields
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.category.trim()) newErrors.category = 'Category is required';
     if (!formData.purchasePrice) newErrors.purchasePrice = 'Purchase price is required';
     if (!formData.target) newErrors.target = 'Target is required';
-    
-    // Size validation
     if (formData.sizeOption === 'fixed' && !formData.sizeValue.trim()) {
       newErrors.sizeValue = 'Size value is required';
     }
     if (formData.sizeOption === 'range') {
       if (!formData.sizeFrom.trim()) newErrors.sizeFrom = 'From value is required';
       if (!formData.sizeTo.trim()) newErrors.sizeTo = 'To value is required';
-      if (formData.sizeFrom && formData.sizeTo && Number(formData.sizeFrom) > Number(formData.sizeTo)) {
-        newErrors.sizeRange = 'From value must be less than or equal to To value';
-      }
     }
-    
-    // Rent price validation
     if (formData.rentOption === 'fixed' && !formData.rentValue) {
       newErrors.rentValue = 'Rent price is required';
     }
@@ -104,92 +82,37 @@ const AddItemsForm = ({ onClose, onSubmit }) => {
     if (formData.rentOption === 'range') {
       if (!formData.rentFrom) newErrors.rentFrom = 'From value is required';
       if (!formData.rentTo) newErrors.rentTo = 'To value is required';
-      if (formData.rentFrom && formData.rentTo && Number(formData.rentFrom) > Number(formData.rentTo)) {
-        newErrors.rentRange = 'From value must be less than or equal to To value';
-      }
     }
-    
-    // Availability validation
     if (formData.availability === 'not-available' && !formData.availableFrom) {
       newErrors.availableFrom = 'Available date is required';
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    
     if (validateForm()) {
-      // Prepare data for submission
-      const submissionData = {
-        ...formData,
-        // Convert size data based on option
-        size: formData.sizeOption === 'fixed' 
-          ? formData.sizeValue 
-          : formData.sizeOption === 'range'
-            ? `${formData.sizeFrom} - ${formData.sizeTo}`
-            : 'Free size',
-        // Convert rent data based on option
-        rentPrice: formData.rentOption === 'fixed' 
-          ? formData.rentValue 
-          : formData.rentOption === 'per-day'
-            ? `${formData.rentPerDay} per day`
-            : `${formData.rentFrom} - ${formData.rentTo}`,
-        // Convert availability data
-        availability: formData.availability === 'available'
-          ? 'Available'
-          : `Not available until ${formData.availableFrom}`
-      };
-      
-      // Call onSubmit prop if provided
-      if (onSubmit) {
-        onSubmit(submissionData);
-      }
-      
-      // Close form
+      if (onSubmit) onSubmit(formData);
       onClose();
     }
   };
 
-  // Reset form
-  const handleReset = () => {
-    setFormData({
-      name: '',
-      category: '',
-      sizeOption: 'fixed',
-      sizeValue: '',
-      sizeFrom: '',
-      sizeTo: '',
-      long: '',
-      colors: '',
-      purchaseDate: '',
-      purchaseFrom: '',
-      itemCountry: '',
-      purchasePrice: '',
-      availability: 'available',
-      availableFrom: '',
-      condition: 'Completely new',
-      rentOption: 'fixed',
-      rentValue: '',
-      rentPerDay: '',
-      rentFrom: '',
-      rentTo: '',
-      target: '',
-      description: '',
-      photo: null
-    });
-    setErrors({});
-  };
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50">
-      <div className="bg-white p-6 md:p-8 rounded-lg shadow-xl w-11/12 md:w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4"
+      onClick={onClose}
+    >
+      <form 
+        onSubmit={handleSubmit}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-xl shadow-2xl w-11/12 md:w-full max-w-3xl max-h-[90vh] flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800">Add New Item</h2>
           <button 
+            type="button"
             onClick={onClose} 
             className="text-gray-500 hover:text-gray-800 transition-colors"
             aria-label="Close form"
@@ -198,7 +121,8 @@ const AddItemsForm = ({ onClose, onSubmit }) => {
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Form Content (Scrollable) */}
+        <div className="space-y-6 overflow-y-auto p-6 flex-grow">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Name */}
             <div>
@@ -659,32 +583,25 @@ const AddItemsForm = ({ onClose, onSubmit }) => {
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
             ></textarea>
           </div>
-          
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-4 pt-4">
-            <button 
-              type="button" 
-              onClick={handleReset}
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
-            >
-              Reset
-            </button>
-            <button 
-              type="button" 
-              onClick={onClose} 
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
-              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
-            >
-              Save Item
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end space-x-4 p-6 border-t border-gray-200">
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+          >
+            Save Item
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

@@ -7,6 +7,8 @@ import Bookings from "./pages/Bookings";
 import AddItemsForm from "./modals/AddItemsForm";
 import Login from "./pages/Login";
 import Registration from "./pages/Registration";
+import { store } from "./store";
+import { Provider } from "react-redux";
 
 const router = createBrowserRouter([
   {
@@ -44,7 +46,11 @@ const router = createBrowserRouter([
 ]);
 
 const App = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <Provider store={store}>
+      <RouterProvider router={router} />
+    </Provider>
+  );
 };
 
 export default App;

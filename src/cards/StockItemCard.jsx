@@ -22,7 +22,7 @@ const StockItemCard = ({ item }) => {
   const progress = Math.min((rented / target) * 100, 100);
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden transform hover:scale-105 transition-transform duration-300 ease-in-out">
+    <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 ease-in-out overflow-hidden transform hover:-translate-y-1">
       <img className="w-full h-48 object-cover" src={imageUrl} alt={name} />
       <div className="p-4">
         <h3 className="text-xl font-bold font-poppins mb-2">{name}</h3>

@@ -22,7 +22,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/AddItemsForm",
-    element: <StockItemCard />,
+    element: <AddItemsForm />,
   },
 ]);
 

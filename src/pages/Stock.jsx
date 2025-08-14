@@ -1,13 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../layout/Sidebar";
 import AddItemsForm from "../modals/AddItemsForm";
 import StockItemCard from "../cards/StockItemCard";
 import ItemInformationPopup from "../modals/ItemInformationPopup";
+import { useSelector } from "react-redux";
+import { getDatabase, ref, onValue } from "firebase/database";
 
 const Stock = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [items, setItems] = useState([]);
+  const db = getDatabase();
+  const userInfo = useSelector((state) => state.userLogInfo.value);
+
+  useEffect(() => {
+    if (userInfo) {
+      const itemsRef = ref(db, `users/${userInfo.uid}/items`);
+      onValue(itemsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const itemsList = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }));
+          setItems(itemsList);
+        } else {
+          setItems([]);
+        }
+      });
+    }
+  }, [db, userInfo]);
 
   const handleOpenAddModal = () => setAddModalOpen(true);
   const handleCloseAddModal = () => setAddModalOpen(false);
@@ -20,65 +43,6 @@ const Stock = () => {
     setSelectedItem(null);
     setInfoModalOpen(false);
   };
-
-  const sampleItems = [
-    {
-      name: "Elegant Black Gown",
-      availability: "Available",
-      size: "M",
-      color: "Black",
-      long: "60 inches",
-      price: "₹50/day",
-      description: "A stunning black gown perfect for evening events. Features a sleek silhouette and fine detailing.",
-      target: 10,
-      rented: 4,
-      imageUrl: "https://via.placeholder.com/300x200.png?text=Black+Gown",
-      category: "Evening Wear",
-      purchaseDate: "2023-01-15",
-      purchaseFrom: "Designer Boutique",
-      itemCountry: "France",
-      purchasePrice: "₹10000",
-      itemCondition: "Fresh",
-      rentPrice: "₹500/day",
-    },
-    {
-      name: "Casual Blue Denim",
-      availability: "Rented",
-      size: "L",
-      color: "Blue",
-      price: "₹25/day",
-      description: "Comfortable and stylish blue denim jacket. A versatile piece for any casual occasion.",
-      target: 15,
-      rented: 15,
-      imageUrl: "https://via.placeholder.com/300x200.png?text=Blue+Denim",
-      category: "Jackets",
-      purchaseDate: "2022-11-20",
-      purchaseFrom: "Levi's Store",
-      itemCountry: "USA",
-      purchasePrice: "₹4000",
-      itemCondition: "Used 3 times",
-      rentPrice: "₹250/day",
-    },
-    {
-        name: "Red Floral Dress",
-        availability: "Available",
-        size: "S",
-        color: "Red",
-        long: "45 inches",
-        price: "₹40/day",
-        description: "A beautiful red floral dress, perfect for summer outings and parties.",
-        target: 8,
-        rented: 2,
-        imageUrl: "https://via.placeholder.com/300x200.png?text=Red+Dress",
-        category: "Dresses",
-        purchaseDate: "2023-05-10",
-        purchaseFrom: "Zara",
-        itemCountry: "Spain",
-        purchasePrice: "₹3500",
-        itemCondition: "Completely new",
-        rentPrice: "₹400/day",
-      },
-  ];
 
   return (
     <Sidebar>
@@ -99,8 +63,8 @@ const Stock = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {sampleItems.map((item, index) => (
-            <div key={index} onClick={() => handleOpenInfoModal(item)} className="cursor-pointer">
+          {items.map((item) => (
+            <div key={item.id} onClick={() => handleOpenInfoModal(item)} className="cursor-pointer">
                 <StockItemCard item={item} />
             </div>
           ))}

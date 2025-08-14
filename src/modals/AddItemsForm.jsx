@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { IoMdClose } from 'react-icons/io';
+import { getDatabase, ref, push, set } from 'firebase/database';
+import { useSelector } from 'react-redux';
 
-const AddItemsForm = ({ onClose, onSubmit }) => {
+const AddItemsForm = ({ onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -25,9 +27,39 @@ const AddItemsForm = ({ onClose, onSubmit }) => {
     rentTo: '',
     target: '',
     description: '',
-    photo: null
+    photo: ''
   });
   const [errors, setErrors] = useState({});
+  const [imageUrl, setImageUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const db = getDatabase();
+  const userInfo = useSelector((state) => state.userLogInfo.value);
+
+  const uploadImage = async (file) => {
+    setIsUploading(true);
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", "ItemImages");
+    data.append("folder", "react/images");
+
+    try {
+      const response = await fetch(
+        "https://api.cloudinary.com/v1_1/dlwwb5ir0/image/upload",
+        {
+          method: "POST",
+          body: data,
+        }
+      );
+
+      const result = await response.json();
+      setImageUrl(result.secure_url);
+      setFormData(prev => ({ ...prev, photo: result.secure_url }));
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -55,7 +87,7 @@ const AddItemsForm = ({ onClose, onSubmit }) => {
         setErrors(prev => ({ ...prev, photo: 'Only JPG, PNG, and GIF files are allowed' }));
         return;
       }
-      setFormData(prev => ({ ...prev, photo: file }));
+      uploadImage(file);
       setErrors(prev => ({ ...prev, photo: null }));
     }
   };
@@ -90,11 +122,17 @@ const AddItemsForm = ({ onClose, onSubmit }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      if (onSubmit) onSubmit(formData);
-      onClose();
+      try {
+        const itemsRef = ref(db, `users/${userInfo.uid}/items`);
+        const newItemRef = push(itemsRef);
+        await set(newItemRef, { ...formData, rented: 0 });
+        onClose();
+      } catch (error) {
+        console.error("Error adding item to database:", error);
+      }
     }
   };
 
@@ -541,9 +579,15 @@ const AddItemsForm = ({ onClose, onSubmit }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Item photo</label>
             <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md ${errors.photo ? 'border-red-500' : 'border-gray-300'}`}>
               <div className="space-y-1 text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                {isUploading ? (
+                  <p>Uploading...</p>
+                ) : imageUrl ? (
+                  <img src={imageUrl} alt="Uploaded" style={{ width: "300px" }} />
+                ) : (
+                  <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
                 <div className="flex text-sm text-gray-600">
                   <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
                     <span>Upload a file</span>
@@ -559,11 +603,6 @@ const AddItemsForm = ({ onClose, onSubmit }) => {
                   <p className="pl-1">or drag and drop</p>
                 </div>
                 <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                {formData.photo && (
-                  <p className="text-xs text-green-600 mt-1">
-                    Selected: {formData.photo.name}
-                  </p>
-                )}
                 {errors.photo && <p className="text-xs text-red-600 mt-1">{errors.photo}</p>}
               </div>
             </div>
@@ -597,8 +636,9 @@ const AddItemsForm = ({ onClose, onSubmit }) => {
           <button 
             type="submit" 
             className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+            disabled={isUploading}
           >
-            Save Item
+            {isUploading ? 'Uploading...' : 'Save Item'}
           </button>
         </div>
       </form>

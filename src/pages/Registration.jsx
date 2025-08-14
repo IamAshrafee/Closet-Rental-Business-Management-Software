@@ -1,0 +1,82 @@
+import React from 'react';
+import { FiUserPlus, FiUser, FiMail, FiLock } from 'react-icons/fi';
+import { NavLink } from 'react-router-dom';
+
+const Registration = () => {
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl flex flex-col md:flex-row-reverse bg-white rounded-2xl shadow-2xl overflow-hidden">
+        
+        {/* Branding Section */}
+        <div className="w-full md:w-1/2 bg-indigo-600 text-white p-12 flex flex-col justify-center items-center text-center">
+          <h1 className="text-4xl font-bold font-poppins mb-3">Welcome!</h1>
+          <p className="text-lg text-indigo-200">Join Rentiva to manage your rental business seamlessly.</p>
+          <div className="mt-8 w-32 h-1 bg-indigo-400 rounded-full"></div>
+        </div>
+
+        {/* Form Section */}
+        <div className="w-full md:w-1/2 p-8 md:p-12">
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">Create Account</h2>
+          <p className="text-gray-500 mb-8">Let's get you started with a new account.</p>
+          
+          <form className="space-y-6">
+            {/* Full Name Input */}
+            <div className="relative">
+              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Full Name"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition"
+              />
+            </div>
+
+            {/* Email Input */}
+            <div className="relative">
+              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="email" 
+                placeholder="Email Address"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition"
+              />
+            </div>
+
+            {/* Password Input */}
+            <div className="relative">
+              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="password" 
+                placeholder="Password"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition"
+              />
+            </div>
+            
+            {/* Confirm Password Input */}
+            <div className="relative">
+              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="password" 
+                placeholder="Confirm Password"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button 
+              type="submit"
+              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-indigo-700 transition-all duration-300 ease-in-out flex items-center justify-center gap-2"
+            >
+              <FiUserPlus />
+              <span>Register</span>
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-gray-500 mt-8">
+            Already have an account? <NavLink to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">Sign in</NavLink>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Registration;

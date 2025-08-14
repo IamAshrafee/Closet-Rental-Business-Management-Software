@@ -1,7 +1,7 @@
 import { FaUserFriends, FaSignOutAlt } from "react-icons/fa";
 import { MdInventory, MdSpaceDashboard } from "react-icons/md";
 import React, { useState, useRef } from "react";
-import { NavLink } from "react-router";
+import { NavLink } from "react-router-dom";
 import { FiMenu } from "react-icons/fi";
 
 const SidebarContent = ({ onLinkClick, activeLink, normalLink }) => (

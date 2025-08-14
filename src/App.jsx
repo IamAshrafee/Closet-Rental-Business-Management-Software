@@ -1,16 +1,17 @@
 import React from "react";
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router";
 import Home from "./pages/Home";
 import Stock from "./pages/Stock";
 import Customers from "./pages/Customers";
 import Bookings from "./pages/Bookings";
 import AddItemsForm from "./modals/AddItemsForm";
-import { Navigate } from "react-router";
+import Login from "./pages/Login";
+import Registration from "./pages/Registration";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/login" replace />,
   },
   {
     path: "/dashboard",
@@ -29,8 +30,16 @@ const router = createBrowserRouter([
     element: <Bookings />,
   },
   {
-    path: "/add-item", // More descriptive route
+    path: "/add-item",
     element: <AddItemsForm />,
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/registration",
+    element: <Registration />,
   },
 ]);
 

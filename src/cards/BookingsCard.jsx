@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiUser, FiPhone, FiCalendar, FiTruck, FiRepeat, FiDollarSign, FiFileText, FiAlertCircle } from 'react-icons/fi';
+import { FiUser, FiPhone, FiCalendar, FiTruck, FiRepeat, FiDollarSign, FiFileText, FiAlertCircle, FiEye, FiEdit, FiTrash2 } from 'react-icons/fi';
 
 const InfoLine = ({ icon, label, value, className = '' }) => (
     <div className={`flex items-center text-sm text-gray-600 ${className}`}>
@@ -9,7 +9,7 @@ const InfoLine = ({ icon, label, value, className = '' }) => (
     </div>
 );
 
-const BookingsCard = ({ booking }) => {
+const BookingsCard = ({ booking, onView, onEdit, onDelete }) => {
     if (!booking) {
         return null;
     }
@@ -28,9 +28,14 @@ const BookingsCard = ({ booking }) => {
 
     const isDue = dueAmount > 0;
 
+    const handleActionClick = (e, action) => {
+        e.stopPropagation(); // Prevent card click from firing if buttons are inside
+        action();
+    };
+
     return (
-        <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 ease-in-out overflow-hidden transform hover:-translate-y-1">
-            <div className="p-5">
+        <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col">
+            <div className="p-5 flex-grow">
                 {/* Header */}
                 <div className="border-b pb-3 mb-4">
                     <h3 className="text-lg font-bold font-poppins text-gray-800">{customerName}</h3>
@@ -65,6 +70,16 @@ const BookingsCard = ({ booking }) => {
                         <p className="text-sm text-gray-700 bg-yellow-50 border border-yellow-200 p-2 rounded-md">{notes}</p>
                     </div>
                 )}
+            </div>
+            
+            {/* Actions */}
+            <div className="flex justify-end items-center p-3 bg-gray-50 border-t">
+                <button onClick={(e) => handleActionClick(e, onView)} className="flex items-center text-sm font-semibold text-indigo-600 hover:text-indigo-800 px-3 py-1 rounded-md hover:bg-indigo-100 transition-colors">
+                    <FiEye className="mr-1.5" /> View Info
+                </button>
+                <div className="w-px h-5 bg-gray-300 mx-2"></div>
+                <button onClick={(e) => handleActionClick(e, onEdit)} className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-100 transition-colors"><FiEdit /></button>
+                <button onClick={(e) => handleActionClick(e, onDelete)} className="p-2 text-gray-500 hover:text-red-600 rounded-full hover:bg-red-100 transition-colors"><FiTrash2 /></button>
             </div>
         </div>
     );

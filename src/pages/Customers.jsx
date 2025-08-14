@@ -1,13 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../layout/Sidebar";
 import AddCustomerPopup from "../modals/AddCustomerPopup";
 import CustomerCard from "../cards/CustomerCard";
 import CustomerInformationPopup from "../modals/CustomerInformationPopup";
+import { useSelector } from "react-redux";
+import { getDatabase, ref, onValue } from "firebase/database";
 
 const Customers = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [customers, setCustomers] = useState([]);
+  const db = getDatabase();
+  const userInfo = useSelector((state) => state.userLogInfo.value);
+
+  useEffect(() => {
+    if (userInfo) {
+      const customersRef = ref(db, `users/${userInfo.uid}/customers`);
+      onValue(customersRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const customersList = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }));
+          setCustomers(customersList);
+        } else {
+          setCustomers([]);
+        }
+      });
+    }
+  }, [db, userInfo]);
 
   const handleOpenAddModal = () => setAddModalOpen(true);
   const handleCloseAddModal = () => setAddModalOpen(false);
@@ -20,36 +43,6 @@ const Customers = () => {
     setSelectedCustomer(null);
     setInfoModalOpen(false);
   };
-
-  const sampleCustomers = [
-    {
-      name: "Aarav Sharma",
-      phone: "+91 98765 43210",
-      altPhone: "+91 98765 11111",
-      nid: "1234 5678 9012",
-      parentNid: "9876 5432 1098",
-      parentType: "Father",
-      husbandNid: "N/A",
-      fbId: "https://facebook.com/aarav.sharma",
-      address: "123, Lotus Lane, Mumbai, Maharashtra, 400001",
-    },
-    {
-      name: "Diya Patel",
-      phone: "+91 87654 32109",
-      altPhone: "",
-      nid: "2345 6789 0123",
-      parentNid: "8765 4321 0987",
-      parentType: "Mother",
-      husbandNid: "3456 7890 1234",
-      fbId: "https://facebook.com/diya.patel",
-      address: "456, Rose Garden, Ahmedabad, Gujarat, 380009",
-    },
-    {
-      name: "Rohan Das",
-      phone: "+91 76543 21098",
-      address: "789, Orchid Street, Kolkata, West Bengal, 700016",
-    },
-  ];
 
   return (
     <Sidebar>
@@ -70,8 +63,8 @@ const Customers = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {sampleCustomers.map((customer, index) => (
-            <div key={index} onClick={() => handleOpenInfoModal(customer)} className="cursor-pointer">
+          {customers.map((customer) => (
+            <div key={customer.id} onClick={() => handleOpenInfoModal(customer)} className="cursor-pointer">
               <CustomerCard customer={customer} />
             </div>
           ))}

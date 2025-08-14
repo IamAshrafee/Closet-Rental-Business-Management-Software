@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiEdit, FiTrash2, FiPhone, FiMapPin } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiPhone, FiMapPin, FiUser, FiLink, FiCreditCard } from 'react-icons/fi';
 
 const CustomerCard = ({ customer }) => {
   if (!customer) {
@@ -9,6 +9,12 @@ const CustomerCard = ({ customer }) => {
   const {
     name,
     phone,
+    altPhone,
+    nid,
+    parentNidType,
+    parentNid,
+    husbandNid,
+    fbId,
     address,
   } = customer;
 
@@ -21,11 +27,46 @@ const CustomerCard = ({ customer }) => {
           <FiPhone className="mr-3" />
           <span>{phone}</span>
         </div>
+
+        {altPhone && (
+          <div className="flex items-center text-gray-600 mb-2">
+            <FiPhone className="mr-3" />
+            <span>{altPhone} (Alt)</span>
+          </div>
+        )}
         
         <div className="flex items-start text-gray-600 mb-4">
           <FiMapPin className="mr-3 mt-1" />
           <span className="flex-1">{address}</span>
         </div>
+
+        {nid && (
+          <div className="flex items-center text-gray-600 mb-2">
+            <FiCreditCard className="mr-3" />
+            <span>NID: {nid}</span>
+          </div>
+        )}
+
+        {parentNid && (
+          <div className="flex items-center text-gray-600 mb-2">
+            <FiUser className="mr-3" />
+            <span>{parentNidType === 'father' ? "Father's NID:" : "Mother's NID:"} {parentNid}</span>
+          </div>
+        )}
+
+        {husbandNid && (
+          <div className="flex items-center text-gray-600 mb-2">
+            <FiUser className="mr-3" />
+            <span>Husband's NID: {husbandNid}</span>
+          </div>
+        )}
+
+        {fbId && (
+          <div className="flex items-center text-gray-600 mb-2">
+            <FiLink className="mr-3" />
+            <a href={fbId} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Facebook Profile</a>
+          </div>
+        )}
 
         <div className="mt-4 flex justify-end space-x-3">
           <button className="p-2 rounded-full hover:bg-gray-200 transition-colors duration-200">

@@ -1,9 +1,12 @@
 // Import React and hooks
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // Import icons
 import { FiLogIn, FiMail, FiLock } from 'react-icons/fi';
 // Import NavLink for navigation
 import { NavLink, useNavigate } from 'react-router-dom';
+// Import Redux hooks
+import { useDispatch, useSelector } from 'react-redux';
+import { userLogInfo } from '../slice/userSlice';
 
 // Firebase imports
 import { initializeApp } from 'firebase/app';
@@ -24,6 +27,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 const Login = () => {
+  // Redux
+  const dispatch = useDispatch();
+  const userInfo = useSelector((state) => state.userLogInfo.value);
+
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -81,6 +88,15 @@ const Login = () => {
       if (userCredential.user && !userCredential.user.emailVerified) {
         navigate('/verify-email');
       } else {
+        // Dispatch user info to Redux and save to local storage
+        const user = {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          displayName: userCredential.user.displayName,
+        };
+        localStorage.setItem('userLoginInfo', JSON.stringify(user));
+        dispatch(userLogInfo(user));
+        
         // Redirect to dashboard
         navigate('/dashboard');
       }
@@ -96,6 +112,13 @@ const Login = () => {
     // Stop loading
     setLoading(false);
   };
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (userInfo) {
+      navigate('/dashboard');
+    }
+  }, [userInfo, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">

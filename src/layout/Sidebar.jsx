@@ -1,59 +1,75 @@
 import { FaUserFriends, FaSignOutAlt } from "react-icons/fa";
 import { MdInventory, MdSpaceDashboard } from "react-icons/md";
 import React, { useState, useRef } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { FiMenu } from "react-icons/fi";
+import { useDispatch } from "react-redux";
+import { userLogInfo } from "../slice/userSlice";
 
-const SidebarContent = ({ onLinkClick, activeLink, normalLink }) => (
-  <div className="h-full w-full pl-7 py-7 border-r border-r-gray-200 flex flex-col justify-between">
-    <div>
-      <div className="pr-7 mb-10">
-        <p className="font-poppins text-2xl font-bold text-gray-800">Rentiva - Rental</p>
-        <p className="font-poppins text-[14px] text-gray-600">Business Management</p>
+const SidebarContent = ({ onLinkClick, activeLink, normalLink }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    dispatch(userLogInfo(null));
+    localStorage.removeItem("userLoginInfo");
+    navigate("/login");
+  };
+
+  return (
+    <div className="h-full w-full pl-7 py-7 border-r border-r-gray-200 flex flex-col justify-between">
+      <div>
+        <div className="pr-7 mb-10">
+          <p className="font-poppins text-2xl font-bold text-gray-800">Rentiva - Rental</p>
+          <p className="font-poppins text-[14px] text-gray-600">Business Management</p>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) => (isActive ? activeLink : normalLink)}
+            onClick={onLinkClick}
+          >
+            <MdSpaceDashboard size={30} />
+            <p className="font-poppins text-[18px]">Dashboard</p>
+          </NavLink>
+          <NavLink
+            to="/stock"
+            className={({ isActive }) => (isActive ? activeLink : normalLink)}
+            onClick={onLinkClick}
+          >
+            <MdInventory size={28} />
+            <p className="font-poppins text-[18px]">Stock</p>
+          </NavLink>
+          <NavLink
+            to="/customers"
+            className={({ isActive }) => (isActive ? activeLink : normalLink)}
+            onClick={onLinkClick}
+          >
+            <FaUserFriends size={28} />
+            <p className="font-poppins text-[18px]">Customers</p>
+          </NavLink>
+          <NavLink
+            to="/bookings"
+            className={({ isActive }) => (isActive ? activeLink : normalLink)}
+            onClick={onLinkClick}
+          >
+            <FaUserFriends size={28} />
+            <p className="font-poppins text-[18px]">Bookings</p>
+          </NavLink>
+        </div>
       </div>
-      <div className="flex flex-col gap-0.5">
-        <NavLink
-          to="/dashboard"
-          className={({ isActive }) => (isActive ? activeLink : normalLink)}
-          onClick={onLinkClick}
+      <div>
+        <div
+          className="flex flex-row gap-3 items-center pl-5 pr-5 hover:bg-gray-100 rounded-l-2xl w-full py-3.5 cursor-pointer"
+          onClick={handleLogout}
         >
-          <MdSpaceDashboard size={30} />
-          <p className="font-poppins text-[18px]">Dashboard</p>
-        </NavLink>
-        <NavLink
-          to="/stock"
-          className={({ isActive }) => (isActive ? activeLink : normalLink)}
-          onClick={onLinkClick}
-        >
-          <MdInventory size={28} />
-          <p className="font-poppins text-[18px]">Stock</p>
-        </NavLink>
-        <NavLink
-          to="/customers"
-          className={({ isActive }) => (isActive ? activeLink : normalLink)}
-          onClick={onLinkClick}
-        >
-          <FaUserFriends size={28} />
-          <p className="font-poppins text-[18px]">Customers</p>
-        </NavLink>
-        <NavLink
-          to="/bookings"
-          className={({ isActive }) => (isActive ? activeLink : normalLink)}
-          onClick={onLinkClick}
-        >
-          <FaUserFriends size={28} />
-          <p className="font-poppins text-[18px]">Bookings</p>
-        </NavLink>
+          <FaSignOutAlt size={28} />
+          <p className="font-poppins text-[18px]">Log Out</p>
+        </div>
       </div>
     </div>
-    <div>
-      <div className="flex flex-row gap-3 items-center pl-5 pr-5 hover:bg-gray-100 rounded-l-2xl w-full py-3.5 cursor-pointer">
-        <FaSignOutAlt size={28} />
-        <p className="font-poppins text-[18px]">Log Out</p>
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 const Sidebar = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

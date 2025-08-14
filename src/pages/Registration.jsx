@@ -1,9 +1,11 @@
 // Import React and hooks
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 // Import icons
 import { FiUserPlus, FiUser, FiMail, FiLock } from "react-icons/fi";
 // Import NavLink for navigation
 import { NavLink, useNavigate } from "react-router-dom";
+// Import Redux hooks
+import { useSelector } from 'react-redux';
 
 // Firebase imports
 import { initializeApp } from "firebase/app";
@@ -31,6 +33,9 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 const Registration = () => {
+  // Redux
+  const userInfo = useSelector((state) => state.userLogInfo.value);
+
   // Form states
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -119,9 +124,6 @@ const Registration = () => {
       // Send email verification
       await sendEmailVerification(auth.currentUser);
 
-      alert(
-        "Registration successful! Please check your email for verification."
-      );
       navigate("/login");
     } catch (error) {
       setFirebaseError(error.message);
@@ -133,6 +135,13 @@ const Registration = () => {
     // Stop loading
     setLoading(false);
   };
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (userInfo) {
+      navigate('/dashboard');
+    }
+  }, [userInfo, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">

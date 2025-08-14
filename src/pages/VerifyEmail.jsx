@@ -1,9 +1,21 @@
-import React, { useState } from 'react';
-import { getAuth, sendEmailVerification } from 'firebase/auth';
+import React, { useState, useEffect } from 'react';
+import { getAuth, onAuthStateChanged, sendEmailVerification } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 
 const VerifyEmail = () => {
   const [message, setMessage] = useState('');
   const auth = getAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.emailVerified) {
+        navigate('/dashboard');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth, navigate]);
 
   const handleResendVerification = async () => {
     if (auth.currentUser) {

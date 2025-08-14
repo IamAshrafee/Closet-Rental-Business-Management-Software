@@ -75,10 +75,15 @@ const Login = () => {
 
     try {
       // Sign in user
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-      // Redirect to dashboard
-      navigate('/dashboard');
+      // Check if email is verified
+      if (userCredential.user && !userCredential.user.emailVerified) {
+        navigate('/verify-email');
+      } else {
+        // Redirect to dashboard
+        navigate('/dashboard');
+      }
     } catch (error) {
       setFirebaseError(error.message);
       if (error.code === 'auth/user-not-found') {

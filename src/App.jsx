@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Registration from "./pages/Registration";
 import { store } from "./store";
 import { Provider } from "react-redux";
+import VerifyEmail from "./pages/VerifyEmail";
 
 const router = createBrowserRouter([
   {
@@ -32,8 +33,8 @@ const router = createBrowserRouter([
     element: <Bookings />,
   },
   {
-    path: "/add-item",
-    element: <AddItemsForm />,
+    path: "/verify-email",
+    element: <VerifyEmail />,
   },
   {
     path: "/login",

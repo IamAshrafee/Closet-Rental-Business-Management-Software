@@ -15,7 +15,7 @@ import {
 } from "firebase/auth";
 import { getDatabase, ref, set } from "firebase/database";
 
-// Firebase config (as you gave)
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDgFLWJLTz3tF40NjNBl8s9eLd6OLk3WiM",
   authDomain: "closet-rental-business.firebaseapp.com",
@@ -31,18 +31,21 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 const Registration = () => {
-  // State for form fields
+  // Form states
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // State for errors
+  // Error states
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [firebaseError, setFirebaseError] = useState("");
+
+  // Loading state for button
+  const [loading, setLoading] = useState(false);
 
   // Navigation hook
   const navigate = useNavigate();
@@ -51,7 +54,7 @@ const Registration = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Reset all errors
+    // Reset errors
     setNameError("");
     setEmailError("");
     setPasswordError("");
@@ -60,13 +63,11 @@ const Registration = () => {
 
     let isValid = true;
 
-    // Validate Full Name
+    // Validation checks
     if (!fullName.trim()) {
       setNameError("Full name is required");
       isValid = false;
     }
-
-    // Validate Email
     if (!email) {
       setEmailError("Please enter an email address");
       isValid = false;
@@ -77,8 +78,6 @@ const Registration = () => {
       setEmailError("Please enter a valid email");
       isValid = false;
     }
-
-    // Validate Password
     if (!password) {
       setPasswordError("Password is required");
       isValid = false;
@@ -86,8 +85,6 @@ const Registration = () => {
       setPasswordError("Password must be at least 6 characters");
       isValid = false;
     }
-
-    // Validate Confirm Password
     if (!confirmPassword) {
       setConfirmPasswordError("Please confirm your password");
       isValid = false;
@@ -96,23 +93,24 @@ const Registration = () => {
       isValid = false;
     }
 
-    // Stop if validation fails
+    // Stop if any error
     if (!isValid) return;
 
+    // Start loading
+    setLoading(true);
+
     try {
-      // Create user in Firebase Authentication
+      // Create user
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
 
-      // Update display name
-      await updateProfile(auth.currentUser, {
-        displayName: fullName,
-      });
+      // Update profile with full name
+      await updateProfile(auth.currentUser, { displayName: fullName });
 
-      // Save user data in Realtime Database
+      // Save user info in Realtime Database
       await set(ref(db, "users/" + userCredential.user.uid), {
         username: fullName,
         email: email,
@@ -131,12 +129,15 @@ const Registration = () => {
         setEmailError("Email already in use");
       }
     }
+
+    // Stop loading
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl flex flex-col md:flex-row-reverse bg-white rounded-2xl shadow-2xl overflow-hidden">
-        {/* Branding Section */}
+        {/* Branding */}
         <div className="w-full md:w-1/2 bg-indigo-600 text-white p-12 flex flex-col justify-center items-center text-center">
           <h1 className="text-4xl font-bold font-poppins mb-3">Welcome!</h1>
           <p className="text-lg text-indigo-200">
@@ -145,7 +146,7 @@ const Registration = () => {
           <div className="mt-8 w-32 h-1 bg-indigo-400 rounded-full"></div>
         </div>
 
-        {/* Form Section */}
+        {/* Form */}
         <div className="w-full md:w-1/2 p-8 md:p-12">
           <h2 className="text-3xl font-bold text-gray-800 mb-4">
             Create Account
@@ -155,13 +156,13 @@ const Registration = () => {
           </p>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Full Name Input */}
+            {/* Full Name */}
             <div className="relative">
               <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Full Name"
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition ${
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg ${
                   nameError ? "border-red-500" : "border-gray-300"
                 }`}
                 value={fullName}
@@ -172,13 +173,13 @@ const Registration = () => {
               )}
             </div>
 
-            {/* Email Input */}
+            {/* Email */}
             <div className="relative">
               <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="email"
                 placeholder="Email Address"
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition ${
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg ${
                   emailError ? "border-red-500" : "border-gray-300"
                 }`}
                 value={email}
@@ -189,13 +190,13 @@ const Registration = () => {
               )}
             </div>
 
-            {/* Password Input */}
+            {/* Password */}
             <div className="relative">
               <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="password"
                 placeholder="Password"
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition ${
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg ${
                   passwordError ? "border-red-500" : "border-gray-300"
                 }`}
                 value={password}
@@ -206,13 +207,13 @@ const Registration = () => {
               )}
             </div>
 
-            {/* Confirm Password Input */}
+            {/* Confirm Password */}
             <div className="relative">
               <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="password"
                 placeholder="Confirm Password"
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition ${
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg ${
                   confirmPasswordError ? "border-red-500" : "border-gray-300"
                 }`}
                 value={confirmPassword}
@@ -230,13 +231,19 @@ const Registration = () => {
               <p className="text-red-500 text-sm">{firebaseError}</p>
             )}
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-indigo-700 transition-all duration-300 ease-in-out flex items-center justify-center gap-2"
+              disabled={loading}
+              className={`w-full py-3 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 
+                ${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                }`}
             >
               <FiUserPlus />
-              <span>Register</span>
+              {loading ? "Creating account…" : "Register"}
             </button>
           </form>
 

@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FiUser, FiPhone, FiCalendar, FiTruck, FiRepeat, FiDollarSign, FiFileText, FiAlertCircle, FiEye, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { getDatabase, ref, onValue } from 'firebase/database';
+import { useSelector } from 'react-redux';
 
 const InfoLine = ({ icon, label, value, className = '' }) => (
     <div className={`flex items-center text-sm text-gray-600 ${className}`}>
@@ -10,21 +12,42 @@ const InfoLine = ({ icon, label, value, className = '' }) => (
 );
 
 const BookingsCard = ({ booking, onView, onEdit, onDelete }) => {
-    if (!booking) {
-        return null;
-    }
+    const [customer, setCustomer] = useState(null);
+    const db = getDatabase();
+    const userInfo = useSelector((state) => state.userLogInfo.value);
 
-    const {
-        customerName,
-        customerPhone,
-        deliveryDate,
-        returnDate,
-        startDate,
-        endDate,
-        totalAmount,
-        dueAmount,
-        notes,
-    } = booking;
+    useEffect(() => {
+        if (userInfo && booking && booking.customerId) {
+            const customerRef = ref(db, `users/${userInfo.uid}/customers/${booking.customerId}`);
+            onValue(customerRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    setCustomer(data);
+                }
+            });
+        }
+    }, [db, userInfo, booking]);
+
+    const { deliveryDate, returnDate, startDate, endDate, notes, items, advances, deliveryCharge, otherCharges } = booking;
+
+    const totalRent = useMemo(() => 
+        items.reduce((total, item) => total + (item.calculatedPrice || 0), 0), 
+        [items]
+    );
+
+    const totalAdvance = useMemo(() => 
+        advances.reduce((total, advance) => total + (Number(advance.amount) || 0), 0), 
+        [advances]
+    );
+
+    const totalCharges = useMemo(() => 
+        (Number(deliveryCharge) || 0) + (Number(otherCharges) || 0), 
+        [deliveryCharge, otherCharges]
+    );
+
+    const totalAmount = useMemo(() => totalRent + totalCharges, [totalRent, totalCharges]);
+
+    const dueAmount = useMemo(() => totalAmount - totalAdvance, [totalAmount, totalAdvance]);
 
     const isDue = dueAmount > 0;
 
@@ -33,21 +56,25 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete }) => {
         action();
     };
 
+    if (!booking || !customer) {
+        return null;
+    }
+
     return (
         <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col">
             <div className="p-5 flex-grow">
                 {/* Header */}
                 <div className="border-b pb-3 mb-4">
-                    <h3 className="text-lg font-bold font-poppins text-gray-800">{customerName}</h3>
-                    <p className="text-sm text-gray-500 flex items-center"><FiPhone className="mr-2" />{customerPhone}</p>
+                    <h3 className="text-lg font-bold font-poppins text-gray-800">{customer.name}</h3>
+                    <p className="text-sm text-gray-500 flex items-center"><FiPhone className="mr-2" />{customer.phone}</p>
                 </div>
 
                 {/* Dates */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 mb-4">
                     <InfoLine icon={<FiTruck />} label="Delivery" value={deliveryDate} className="font-semibold text-blue-600" />
                     <InfoLine icon={<FiRepeat />} label="Return" value={returnDate} className="font-semibold text-red-600" />
-                    <InfoLine icon={<FiCalendar />} label="Start" value={startDate} />
-                    <InfoLine icon={<FiCalendar />} label="End" value={endDate} />
+                    <InfoLine icon={<FiCalendar />} label="Rent Start" value={startDate} />
+                    <InfoLine icon={<FiCalendar />} label="Rent End" value={endDate} />
                 </div>
 
                 {/* Financials */}

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiUser, FiBox, FiCalendar, FiDollarSign, FiTruck, FiRepeat, FiFileText, FiHash } from 'react-icons/fi';
+import { getDatabase, ref, get } from "firebase/database";
+import { useSelector } from 'react-redux';
 
 const DetailSection = ({ title, children }) => (
     <div className="mb-4">
@@ -19,13 +21,40 @@ const InfoPair = ({ label, value }) => (
 );
 
 const BookingInformationPopup = ({ booking, onClose }) => {
+    const [customer, setCustomer] = useState(null);
+    const [detailedItems, setDetailedItems] = useState([]);
+    const db = getDatabase();
+    const userInfo = useSelector((state) => state.userLogInfo.value);
+
+    useEffect(() => {
+        if (userInfo && booking) {
+            // Fetch customer details
+            const customerRef = ref(db, `users/${userInfo.uid}/customers/${booking.customerId}`);
+            get(customerRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    setCustomer(snapshot.val());
+                }
+            });
+
+            // Fetch item details
+            const itemPromises = booking.items.map(item => {
+                const itemRef = ref(db, `users/${userInfo.uid}/items/${item.itemId}`);
+                return get(itemRef).then(snapshot => ({
+                    ...item, // from booking
+                    ...(snapshot.exists() ? snapshot.val() : {}), // from items db
+                }));
+            });
+
+            Promise.all(itemPromises).then(itemsData => {
+                setDetailedItems(itemsData);
+            });
+        }
+    }, [db, userInfo, booking]);
+
     if (!booking) return null;
 
     const {
         id,
-        customerName,
-        customerPhone,
-        items,
         deliveryType,
         deliveryDate,
         address,
@@ -36,6 +65,7 @@ const BookingInformationPopup = ({ booking, onClose }) => {
         notes,
         totalAmount,
         dueAmount,
+        status
     } = booking;
 
     return (
@@ -52,40 +82,45 @@ const BookingInformationPopup = ({ booking, onClose }) => {
 
                 {/* Content */}
                 <div className="overflow-y-auto p-6 space-y-4">
-                    <DetailSection title="Customer">
-                        <InfoPair label="Name" value={customerName} />
-                        <InfoPair label="Phone" value={customerPhone} />
-                    </DetailSection>
+                    {customer && (
+                        <DetailSection title="Customer">
+                            <InfoPair label="Name" value={customer.name} />
+                            <InfoPair label="Phone" value={customer.phone} />
+                        </DetailSection>
+                    )}
 
-                    <DetailSection title="Booking Timeline">
+                    <DetailSection title="Booking Details">
+                        <InfoPair label="Status" value={status} />
                         <InfoPair label="Delivery Date" value={deliveryDate} />
                         <InfoPair label="Return Date" value={returnDate} />
                         <InfoPair label="Delivery Type" value={deliveryType === 'HomeDelivery' ? 'Home Delivery' : 'Customer Pickup'} />
                         {deliveryType === 'HomeDelivery' && <InfoPair label="Address" value={address} />}
                     </DetailSection>
 
-                    <DetailSection title="Rented Items">
-                        {items.map((item, index) => (
-                            <div key={index} className="py-1 border-b last:border-none">
-                                <InfoPair label={item.name} value={`₹${item.price.toFixed(2)}`} />
-                                <p className="text-xs text-gray-500 pl-2">{item.startDate} to {item.endDate}</p>
-                            </div>
-                        ))}
-                    </DetailSection>
+                    {detailedItems.length > 0 && (
+                        <DetailSection title="Rented Items">
+                            {detailedItems.map((item, index) => (
+                                <div key={`${item.itemId}-${index}`} className="py-1 border-b last:border-none">
+                                    <InfoPair label={item.name || 'Item not found'} value={`₹${parseFloat(item.calculatedPrice || 0).toFixed(2)}`} />
+                                    <p className="text-xs text-gray-500 pl-2">{booking.startDate} to {booking.endDate}</p>
+                                </div>
+                            ))}
+                        </DetailSection>
+                    )}
 
                     <DetailSection title="Financials">
-                        <InfoPair label="Total Rent" value={`₹${items.reduce((sum, i) => sum + i.price, 0).toFixed(2)}`} />
-                        <InfoPair label="Delivery Charge" value={`₹${deliveryCharge.toFixed(2)}`} />
-                        <InfoPair label="Other Charges" value={`₹${otherCharges.toFixed(2)}`} />
+                        <InfoPair label="Total Rent" value={`₹${detailedItems.reduce((sum, i) => sum + parseFloat(i.calculatedPrice || 0), 0).toFixed(2)}`} />
+                        <InfoPair label="Delivery Charge" value={`₹${parseFloat(deliveryCharge || 0).toFixed(2)}`} />
+                        <InfoPair label="Other Charges" value={`₹${parseFloat(otherCharges || 0).toFixed(2)}`} />
                         <hr className="my-1"/>
-                        <InfoPair label="Subtotal" value={`₹${totalAmount.toFixed(2)}`} />
-                        {advances.map((adv, index) => (
-                             <InfoPair key={index} label={`Advance on ${adv.date}`} value={`- ₹${adv.amount.toFixed(2)}`} />
+                        <InfoPair label="Subtotal" value={`₹${parseFloat(totalAmount || 0).toFixed(2)}`} />
+                        {advances && advances.map((adv, index) => (
+                             <InfoPair key={`advance-${index}`} label={`Advance on ${adv.date}`} value={`- ₹${parseFloat(adv.amount || 0).toFixed(2)}`} />
                         ))}
                         <hr className="my-1"/>
                         <div className="flex justify-between font-bold text-lg text-indigo-600">
                             <p>Due Amount:</p>
-                            <p>₹{dueAmount.toFixed(2)}</p>
+                            <p>₹{parseFloat(dueAmount || 0).toFixed(2)}</p>
                         </div>
                     </DetailSection>
 

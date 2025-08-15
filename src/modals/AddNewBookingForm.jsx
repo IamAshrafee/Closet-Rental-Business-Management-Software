@@ -1,20 +1,9 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiPlus, FiTrash2, FiUser, FiBox, FiCalendar, FiDollarSign, FiFileText, FiChevronDown, FiCheck, FiInfo } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Mock data for dropdowns
-const sampleCustomers = [
-  { id: 1, name: 'Aarav Sharma', phone: '+91 98765 43210' },
-  { id: 2, name: 'Diya Patel', phone: '+91 87654 32109' },
-  { id: 3, name: 'Rohan Das', phone: '+91 76543 21098' },
-];
-
-const sampleItems = [
-  { id: 1, name: 'Elegant Black Gown', category: 'Dresses', price: 1500 },
-  { id: 2, name: 'Casual Blue Denim', category: 'Pants', price: 800 },
-  { id: 3, name: 'Red Floral Dress', category: 'Dresses', price: 1200 },
-];
+import { getDatabase, ref, onValue, push, set } from 'firebase/database';
+import { useSelector } from 'react-redux';
 
 // Reusable UI Components
 const FormSection = ({ title, icon, children, required = false }) => (
@@ -107,14 +96,16 @@ const Alert = ({ type, message, onClose }) => (
   </motion.div>
 );
 
-const AddNewBookingForm = ({ onClose, onSubmit }) => {
+const AddNewBookingForm = ({ onClose }) => {
   const [bookingDetails, setBookingDetails] = useState({
     customerId: '',
     items: [],
     deliveryType: 'CustomerPickup',
     deliveryDate: '',
-    address: '',
     returnDate: '',
+    startDate: '',
+    endDate: '',
+    address: '',
     deliveryCharge: '',
     otherCharges: '',
     advances: [{ amount: '', date: new Date().toISOString().split('T')[0] }],
@@ -124,17 +115,53 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
   const [errors, setErrors] = useState({});
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [customers, setCustomers] = useState([]);
+  const [stockItems, setStockItems] = useState([]);
+  const db = getDatabase();
+  const userInfo = useSelector((state) => state.userLogInfo.value);
+
+  useEffect(() => {
+    if (userInfo) {
+      const customersRef = ref(db, `users/${userInfo.uid}/customers`);
+      onValue(customersRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const customersList = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }));
+          setCustomers(customersList);
+        } else {
+          setCustomers([]);
+        }
+      });
+
+      const itemsRef = ref(db, `users/${userInfo.uid}/items`);
+      onValue(itemsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const itemsList = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }));
+          setStockItems(itemsList);
+        } else {
+          setStockItems([]);
+        }
+      });
+    }
+  }, [db, userInfo]);
 
   // Calculate price based on price type and dates
   const calculateItemPrice = useCallback((item) => {
-    if (!item.startDate || !item.endDate || !item.price) return 0;
+    if (!bookingDetails.startDate || !bookingDetails.endDate || !item.price) return 0;
     
-    const start = new Date(item.startDate);
-    const end = new Date(item.endDate);
+    const start = new Date(bookingDetails.startDate);
+    const end = new Date(bookingDetails.endDate);
     const days = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1);
     
     return item.priceType === 'Per Day' ? days * Number(item.price) : Number(item.price);
-  }, []);
+  }, [bookingDetails.startDate, bookingDetails.endDate]);
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -153,8 +180,6 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
       ...prev,
       items: [...prev.items, { 
         itemId: '', 
-        startDate: '', 
-        endDate: '', 
         priceType: 'Fixed', 
         price: '',
         calculatedPrice: 0
@@ -169,7 +194,7 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
     newItems[index] = { ...newItems[index], [name]: value };
     
     // Recalculate price when relevant fields change
-    if (['startDate', 'endDate', 'price', 'priceType'].includes(name)) {
+    if (['price', 'priceType'].includes(name)) {
       newItems[index].calculatedPrice = calculateItemPrice(newItems[index]);
     }
     
@@ -216,6 +241,30 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
     if (!bookingDetails.customerId) {
       newErrors.customerId = 'Please select a customer';
     }
+
+    if (!bookingDetails.deliveryDate) {
+      newErrors.deliveryDate = 'Delivery date is required';
+    }
+
+    if (!bookingDetails.returnDate) {
+      newErrors.returnDate = 'Return date is required';
+    }
+
+    if (!bookingDetails.startDate) {
+      newErrors.startDate = 'Rent Start date is required';
+    }
+
+    if (!bookingDetails.endDate) {
+      newErrors.endDate = 'Rent End date is required';
+    }
+
+    if (bookingDetails.startDate && bookingDetails.endDate && new Date(bookingDetails.startDate) > new Date(bookingDetails.endDate)) {
+      newErrors.endDate = 'Rent End date must be after Rent Start date';
+    }
+
+    if (bookingDetails.deliveryDate && bookingDetails.returnDate && new Date(bookingDetails.deliveryDate) > new Date(bookingDetails.returnDate)) {
+      newErrors.returnDate = 'Return date must be after Delivery date';
+    }
     
     // Items validation
     if (bookingDetails.items.length === 0) {
@@ -224,15 +273,6 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
       bookingDetails.items.forEach((item, index) => {
         if (!item.itemId) {
           newErrors[`items.${index}.itemId`] = 'Please select an item';
-        }
-        if (!item.startDate) {
-          newErrors[`items.${index}.startDate`] = 'Start date is required';
-        }
-        if (!item.endDate) {
-          newErrors[`items.${index}.endDate`] = 'End date is required';
-        }
-        if (item.startDate && item.endDate && new Date(item.startDate) > new Date(item.endDate)) {
-          newErrors[`items.${index}.endDate`] = 'End date must be after start date';
         }
         if (!item.price) {
           newErrors[`items.${index}.price`] = 'Price is required';
@@ -274,25 +314,27 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
     }
     
     setSubmitting(true);
+
+    const totalRent = bookingDetails.items.reduce((total, item) => total + item.calculatedPrice, 0);
+    const totalCharges = Number(bookingDetails.deliveryCharge || 0) + Number(bookingDetails.otherCharges || 0);
+    const totalAmount = totalRent + totalCharges;
+    const totalAdvance = bookingDetails.advances.reduce((total, advance) => total + Number(advance.amount || 0), 0);
+    const dueAmount = totalAmount - totalAdvance;
+
+    const dataToSave = {
+      ...bookingDetails,
+      totalRent,
+      totalCharges,
+      totalAmount,
+      totalAdvance,
+      dueAmount,
+      status: 'Upcoming' // Initial status
+    };
     
     try {
-      // Prepare data for submission
-      const submissionData = {
-        ...bookingDetails,
-        // Add calculated prices to items
-        items: bookingDetails.items.map(item => ({
-          ...item,
-          calculatedPrice: calculateItemPrice(item)
-        }))
-      };
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Call onSubmit prop if provided
-      if (onSubmit) {
-        onSubmit(submissionData);
-      }
+      const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
+      const newBookingRef = push(bookingsRef);
+      await set(newBookingRef, dataToSave);
       
       setAlert({ show: true, type: 'success', message: 'Booking created successfully!' });
       
@@ -314,8 +356,10 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
       items: [],
       deliveryType: 'CustomerPickup',
       deliveryDate: '',
-      address: '',
       returnDate: '',
+      startDate: '',
+      endDate: '',
+      address: '',
       deliveryCharge: '',
       otherCharges: '',
       advances: [{ amount: '', date: new Date().toISOString().split('T')[0] }],
@@ -344,8 +388,8 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
 
   // Get selected customer
   const selectedCustomer = useMemo(() => 
-    sampleCustomers.find(c => c.id === Number(bookingDetails.customerId)), 
-    [bookingDetails.customerId]
+    customers.find(c => c.id === bookingDetails.customerId), 
+    [bookingDetails.customerId, customers]
   );
 
   return (
@@ -385,7 +429,7 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
                 required
               >
                 <option value="">Select a customer</option>
-                {sampleCustomers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
+                {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
               </SelectField>
               
               {selectedCustomer && (
@@ -394,6 +438,74 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
                   <p className="text-sm text-blue-800"><span className="font-medium">Phone:</span> {selectedCustomer.phone}</p>
                 </div>
               )}
+            </FormSection>
+
+            <FormSection title="Delivery & Dates" icon={<FiCalendar className="text-indigo-600" />}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SelectField 
+                  name="deliveryType" 
+                  value={bookingDetails.deliveryType} 
+                  onChange={handleInputChange}
+                  label="Delivery Type"
+                >
+                  <option value="CustomerPickup">Customer Pickup</option>
+                  <option value="HomeDelivery">Home Delivery</option>
+                </SelectField>
+                
+                <div />
+
+                <InputField 
+                  type="date" 
+                  name="deliveryDate" 
+                  value={bookingDetails.deliveryDate} 
+                  onChange={handleInputChange} 
+                  label="Delivery Date"
+                  error={errors.deliveryDate}
+                  required
+                />
+                
+                <InputField 
+                  type="date" 
+                  name="returnDate" 
+                  value={bookingDetails.returnDate} 
+                  onChange={handleInputChange} 
+                  label="Return Date"
+                  error={errors.returnDate}
+                  required
+                />
+
+                <InputField 
+                  type="date" 
+                  name="startDate" 
+                  value={bookingDetails.startDate} 
+                  onChange={handleInputChange} 
+                  label="Rent Start Date"
+                  error={errors.startDate}
+                  required
+                />
+                
+                <InputField 
+                  type="date" 
+                  name="endDate" 
+                  value={bookingDetails.endDate} 
+                  onChange={handleInputChange} 
+                  label="Rent End Date"
+                  error={errors.endDate}
+                  required
+                />
+
+                <div className="md:col-span-2">
+                  <TextareaField 
+                    name="address" 
+                    value={bookingDetails.address} 
+                    onChange={handleInputChange} 
+                    rows="2" 
+                    label="Address"
+                    error={errors.address}
+                    required={bookingDetails.deliveryType === 'HomeDelivery'}
+                  />
+                </div>
+              </div>
             </FormSection>
             
             <FormSection title="Rented Items" icon={<FiBox className="text-indigo-600" />} required>
@@ -427,30 +539,9 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
                       required
                     >
                       <option value="">Select an item</option>
-                      {sampleItems.map(i => <option key={i.id} value={i.id}>{i.name} - {i.category}</option>)}
+                      {stockItems.map(i => <option key={i.id} value={i.id}>{i.name} - {i.category}</option>)}
                     </SelectField>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <InputField 
-                        type="date" 
-                        name="startDate" 
-                        value={item.startDate} 
-                        onChange={(e) => handleItemChange(index, e)} 
-                        label="Start Date"
-                        error={errors[`items.${index}.startDate`]}
-                        required
-                      />
-                      <InputField 
-                        type="date" 
-                        name="endDate" 
-                        value={item.endDate} 
-                        onChange={(e) => handleItemChange(index, e)} 
-                        label="End Date"
-                        error={errors[`items.${index}.endDate`]}
-                        required
-                      />
-                    </div>
-                    
+                                        
                     <div className="flex items-center gap-4">
                       <SelectField 
                         name="priceType" 
@@ -491,47 +582,6 @@ const AddNewBookingForm = ({ onClose, onSubmit }) => {
               </button>
             </FormSection>
             
-            <FormSection title="Delivery & Dates" icon={<FiCalendar className="text-indigo-600" />}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SelectField 
-                  name="deliveryType" 
-                  value={bookingDetails.deliveryType} 
-                  onChange={handleInputChange}
-                  label="Delivery Type"
-                >
-                  <option value="CustomerPickup">Customer Pickup</option>
-                  <option value="HomeDelivery">Home Delivery</option>
-                </SelectField>
-                
-                <InputField 
-                  type="date" 
-                  name="deliveryDate" 
-                  value={bookingDetails.deliveryDate} 
-                  onChange={handleInputChange} 
-                  label="Delivery Date"
-                />
-                
-                <div className="md:col-span-2">
-                  <TextareaField 
-                    name="address" 
-                    value={bookingDetails.address} 
-                    onChange={handleInputChange} 
-                    rows="2" 
-                    label="Address"
-                    error={errors.address}
-                    required={bookingDetails.deliveryType === 'HomeDelivery'}
-                  />
-                </div>
-                
-                <InputField 
-                  type="date" 
-                  name="returnDate" 
-                  value={bookingDetails.returnDate} 
-                  onChange={handleInputChange} 
-                  label="Return Date"
-                />
-              </div>
-            </FormSection>
           </div>
           
           {/* Right Column */}

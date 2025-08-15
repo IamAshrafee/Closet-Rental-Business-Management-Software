@@ -93,8 +93,8 @@ const Reminders = () => {
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <UpcomingDeliveriesCard bookings={deliveries} onDeliveryClick={handleDeliveryClick} />
-          <UpcomingReturnsCard bookings={deliveries} onReturnClick={handleReturnClick} />
+          <UpcomingDeliveriesCard bookings={deliveries.filter(b => b.status === 'Waiting for Delivery')} onDeliveryClick={handleDeliveryClick} />
+          <UpcomingReturnsCard bookings={deliveries.filter(b => b.status === 'Waiting for Return')} onReturnClick={handleReturnClick} />
         </div>
       </div>
       {selectedDelivery && <DeliveryInformationPopup booking={selectedDelivery} stockItems={stockItems} onClose={handleClosePopup} />}

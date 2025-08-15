@@ -3,7 +3,7 @@ import { FiUser, FiCalendar, FiPackage, FiDollarSign, FiAlertCircle } from 'reac
 
 const UpcomingReturnsCard = ({ bookings, onReturnClick }) => {
   const upcomingReturns = bookings
-    .filter(booking => (booking.status === 'Upcoming' || booking.status === 'Ongoing') && new Date(booking.returnDate) >= new Date())
+    .filter(booking => booking.status === 'Waiting for Return')
     .sort((a, b) => new Date(a.returnDate) - new Date(b.returnDate));
 
   return (

@@ -4,7 +4,7 @@ import AddNewBookingForm from "../modals/AddNewBookingForm";
 import BookingsCard from "../cards/BookingsCard";
 import BookingInformationPopup from "../modals/BookingInformationPopup";
 import { useSelector } from "react-redux";
-import { getDatabase, ref, onValue, remove } from "firebase/database";
+import { getDatabase, ref, onValue, remove, update } from "firebase/database";
 
 const Bookings = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -59,6 +59,19 @@ const Bookings = () => {
     }
   };
 
+  const handleStatusChange = (booking, newStatus) => {
+    if (window.confirm(`Are you sure you want to change the status to ${newStatus}?`)) {
+      const bookingRef = ref(db, `users/${userInfo.uid}/bookings/${booking.id}`);
+      update(bookingRef, { status: newStatus })
+        .then(() => {
+          console.log(`Booking status updated to ${newStatus}`);
+        })
+        .catch((error) => {
+          console.error("Error updating booking status: ", error);
+        });
+    }
+  };
+
   return (
     <Sidebar>
       <div className="flex flex-col">
@@ -85,6 +98,7 @@ const Bookings = () => {
                     onView={() => handleOpenInfoModal(booking)}
                     onEdit={() => handleEditBooking(booking)}
                     onDelete={() => handleDeleteBooking(booking)}
+                    onStatusChange={handleStatusChange}
                 />
             ))}
         </div>

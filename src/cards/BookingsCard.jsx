@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiUser, FiPhone, FiCalendar, FiTruck, FiRepeat, FiDollarSign, FiFileText, FiAlertCircle, FiEye, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiUser, FiPhone, FiCalendar, FiTruck, FiRepeat, FiDollarSign, FiFileText, FiAlertCircle, FiEye, FiEdit, FiTrash2, FiCheckCircle, FiClock, FiChevronDown } from 'react-icons/fi';
 import { getDatabase, ref, onValue } from 'firebase/database';
 import { useSelector } from 'react-redux';
 
@@ -11,7 +11,7 @@ const InfoLine = ({ icon, label, value, className = '' }) => (
     </div>
 );
 
-const BookingsCard = ({ booking, onView, onEdit, onDelete }) => {
+const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => {
     const [customer, setCustomer] = useState(null);
     const db = getDatabase();
     const userInfo = useSelector((state) => state.userLogInfo.value);
@@ -28,7 +28,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete }) => {
         }
     }, [db, userInfo, booking]);
 
-    const { deliveryDate, returnDate, startDate, endDate, notes, items, advances, deliveryCharge, otherCharges } = booking;
+    const { deliveryDate, returnDate, startDate, endDate, notes, items, advances, deliveryCharge, otherCharges, status } = booking;
 
     const totalRent = useMemo(() => 
         items.reduce((total, item) => total + (item.calculatedPrice || 0), 0), 
@@ -56,6 +56,24 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete }) => {
         action();
     };
 
+    const getStatusColor = (currentStatus) => {
+        switch (currentStatus) {
+            case 'Waiting for Delivery': return 'bg-blue-100 text-blue-800';
+            case 'Waiting for Return': return 'bg-yellow-100 text-yellow-800';
+            case 'Completed': return 'bg-green-100 text-green-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const handleStatusChangeClick = (e) => {
+        const newStatus = e.target.value;
+        if (newStatus && newStatus !== status) {
+            onStatusChange(booking, newStatus);
+        }
+    };
+
+    const allStatuses = ['Waiting for Delivery', 'Waiting for Return', 'Completed'];
+
     if (!booking || !customer) {
         return null;
     }
@@ -64,9 +82,14 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete }) => {
         <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col">
             <div className="p-5 flex-grow">
                 {/* Header */}
-                <div className="border-b pb-3 mb-4">
-                    <h3 className="text-lg font-bold font-poppins text-gray-800">{customer.name}</h3>
-                    <p className="text-sm text-gray-500 flex items-center"><FiPhone className="mr-2" />{customer.phone}</p>
+                <div className="border-b pb-3 mb-4 flex justify-between items-center">
+                    <div>
+                        <h3 className="text-lg font-bold font-poppins text-gray-800">{customer.name}</h3>
+                        <p className="text-sm text-gray-500 flex items-center"><FiPhone className="mr-2" />{customer.phone}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(status)}`}>
+                        {status}
+                    </span>
                 </div>
 
                 {/* Dates */}
@@ -105,6 +128,20 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete }) => {
                     <FiEye className="mr-1.5" /> View Info
                 </button>
                 <div className="w-px h-5 bg-gray-300 mx-2"></div>
+                
+                <div className="relative inline-block text-left">
+                    <select
+                        onChange={handleStatusChangeClick}
+                        value={status}
+                        className="appearance-none bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-8 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                        {allStatuses.map(s => (
+                            <option key={s} value={s}>{s}</option>
+                        ))}
+                    </select>
+                    <FiChevronDown className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400" />
+                </div>
+
                 <button onClick={(e) => handleActionClick(e, onEdit)} className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-100 transition-colors"><FiEdit /></button>
                 <button onClick={(e) => handleActionClick(e, onDelete)} className="p-2 text-gray-500 hover:text-red-600 rounded-full hover:bg-red-100 transition-colors"><FiTrash2 /></button>
             </div>

@@ -334,7 +334,7 @@ const AddNewBookingForm = ({ onClose, booking }) => {
       totalAmount,
       totalAdvance,
       dueAmount,
-      status: 'Upcoming' // Initial status
+      status: booking ? booking.status : 'Waiting for Delivery' // Initial status
     };
     
     try {

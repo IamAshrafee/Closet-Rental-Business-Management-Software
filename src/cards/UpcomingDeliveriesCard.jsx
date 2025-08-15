@@ -3,7 +3,7 @@ import { FiUser, FiCalendar, FiPackage, FiDollarSign, FiAlertCircle } from 'reac
 
 const UpcomingDeliveriesCard = ({ bookings, onDeliveryClick }) => {
   const upcomingBookings = bookings
-    .filter(booking => booking.status === 'Upcoming')
+    .filter(booking => booking.status === 'Waiting for Delivery')
     .sort((a, b) => new Date(a.deliveryDate) - new Date(b.deliveryDate));
 
   return (

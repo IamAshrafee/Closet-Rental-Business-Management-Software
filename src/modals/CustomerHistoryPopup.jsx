@@ -1,11 +1,107 @@
 import React from 'react';
 import { IoMdClose } from 'react-icons/io';
-import { FiDollarSign, FiPackage, FiActivity, FiAlertCircle } from 'react-icons/fi';
+import { 
+  FiDollarSign, 
+  FiPackage, 
+  FiActivity, 
+  FiAlertCircle,
+  FiCalendar,
+  FiClock,
+  FiList
+} from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const CustomerHistoryPopup = ({ customer, bookings, stockItems, onClose }) => {
-  if (!customer) {
-    return null;
+const StatCard = ({ icon, label, value, color }) => (
+  <motion.div 
+    className="p-4 bg-white rounded-xl shadow-xs border border-gray-100"
+    whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+  >
+    <div className={`w-10 h-10 rounded-lg ${color.bg} ${color.text} flex items-center justify-center mb-3`}>
+      {React.cloneElement(icon, { size: 18 })}
+    </div>
+    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{label}</p>
+    <p className="text-xl font-bold text-gray-800 mt-1">{value}</p>
+  </motion.div>
+);
+
+const BookingItem = ({ booking, getItemName }) => (
+  <motion.li 
+    className="p-5 border border-gray-200 rounded-xl bg-white shadow-xs mb-4"
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.2 }}
+    whileHover={{ scale: 1.01 }}
+  >
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
+      <div className="flex items-center mb-2 sm:mb-0">
+        <div className="bg-blue-50 p-2 rounded-lg text-blue-600 mr-3">
+          <FiCalendar size={16} />
+        </div>
+        <p className="font-semibold text-gray-800">Booking #{booking.id.slice(0, 6)}</p>
+      </div>
+      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+        {booking.status}
+      </span>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
+      <div className="flex items-center">
+        <FiCalendar className="text-gray-400 mr-2" size={14} />
+        <span><strong>Delivery:</strong> {formatDate(booking.deliveryDate)}</span>
+      </div>
+      <div className="flex items-center">
+        <FiCalendar className="text-gray-400 mr-2" size={14} />
+        <span><strong>Return:</strong> {formatDate(booking.returnDate)}</span>
+      </div>
+      <div className="flex items-center">
+        <FiDollarSign className="text-gray-400 mr-2" size={14} />
+        <span><strong>Total:</strong> ₹{booking.totalAmount?.toFixed(2)}</span>
+      </div>
+      <div className="flex items-center">
+        <FiAlertCircle className="text-gray-400 mr-2" size={14} />
+        <span><strong>Due:</strong> ₹{booking.dueAmount?.toFixed(2)}</span>
+      </div>
+    </div>
+
+    <div>
+      <div className="flex items-center text-sm font-semibold text-gray-700 mb-3">
+        <FiList className="text-gray-400 mr-2" size={14} />
+        <span>Items Rented</span>
+      </div>
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {booking.items?.map((item, index) => (
+          <li key={index} className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+            {getItemName(item.itemId)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  </motion.li>
+);
+
+const getStatusColor = (status) => {
+  switch(status) {
+    case 'Completed':
+      return 'bg-green-100 text-green-800';
+    case 'Upcoming':
+      return 'bg-blue-100 text-blue-800';
+    case 'Ongoing':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'Cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
   }
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+};
+
+const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = [], onClose }) => {
+  if (!isOpen || !customer) return null;
 
   const totalSpent = bookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0);
   const totalBookings = bookings.length;
@@ -14,101 +110,149 @@ const CustomerHistoryPopup = ({ customer, bookings, stockItems, onClose }) => {
 
   const getItemName = (itemId) => {
     const item = stockItems.find(item => item.id === itemId);
-    return item ? item.name : 'Item not found';
+    return item ? item.name : 'Unknown Item';
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4"
-      onClick={onClose}
-    >
-      <div 
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-xl shadow-2xl w-11/12 md:w-full max-w-4xl max-h-[90vh] flex flex-col"
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4"
+        onClick={onClose}
       >
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800">{customer.name}'s History</h2>
-          <button 
-            type="button"
-            onClick={onClose} 
-            className="text-gray-500 hover:text-gray-800 transition-colors"
-            aria-label="Close form"
-          >
-            <IoMdClose size={24} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="overflow-y-auto p-6 flex-grow">
-          {/* Customer Stats */}
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-600">Statistics</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div className="p-4 bg-white rounded-lg shadow-sm">
-                <FiDollarSign className="text-green-500 mx-auto text-2xl mb-2" />
-                <p className="text-gray-500 text-sm">Total Spent</p>
-                <p className="font-bold text-gray-800 text-xl">₹{totalSpent.toFixed(2)}</p>
-              </div>
-              <div className="p-4 bg-white rounded-lg shadow-sm">
-                <FiPackage className="text-blue-500 mx-auto text-2xl mb-2" />
-                <p className="text-gray-500 text-sm">Total Bookings</p>
-                <p className="font-bold text-gray-800 text-xl">{totalBookings}</p>
-              </div>
-              <div className="p-4 bg-white rounded-lg shadow-sm">
-                <FiActivity className="text-yellow-500 mx-auto text-2xl mb-2" />
-                <p className="text-gray-500 text-sm">Active Bookings</p>
-                <p className="font-bold text-gray-800 text-xl">{activeBookings}</p>
-              </div>
-              <div className="p-4 bg-white rounded-lg shadow-sm">
-                <FiAlertCircle className="text-red-500 mx-auto text-2xl mb-2" />
-                <p className="text-gray-500 text-sm">Outstanding</p>
-                <p className="font-bold text-gray-800 text-xl">₹{totalOutstanding.toFixed(2)}</p>
-              </div>
+        <motion.div 
+          initial={{ scale: 0.95, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.95, y: 20 }}
+          transition={{ type: "spring", damping: 25 }}
+          className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">{customer.name}'s Rental History</h2>
+              <p className="text-sm text-gray-500 mt-1">All booking records and statistics</p>
             </div>
+            <button 
+              onClick={onClose} 
+              className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              aria-label="Close"
+            >
+              <IoMdClose size={20} />
+            </button>
           </div>
 
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-600">Booking History</h3>
-            {bookings && bookings.length > 0 ? (
-              <ul className="space-y-4">
-                {bookings.map(booking => (
-                  <li key={booking.id} className="p-4 border rounded-md bg-white shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="font-semibold text-gray-800">Booking ID: {booking.id}</p>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${booking.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {booking.status}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                      <p><strong>Delivery:</strong> {booking.deliveryDate}</p>
-                      <p><strong>Return:</strong> {booking.returnDate}</p>
-                      <p><strong>Total:</strong> ₹{booking.totalAmount.toFixed(2)}</p>
-                      <p><strong>Due:</strong> ₹{booking.dueAmount.toFixed(2)}</p>
-                    </div>
-                    <div className="mt-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-2">Items Rented:</p>
-                      <ul className="list-disc list-inside pl-2 text-sm text-gray-600">
-                        {booking.items.map((item, index) => (
-                          <li key={index}>{getItemName(item.itemId)}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-center text-gray-500 py-8">No bookings found for this customer.</p>
-            )}
-          </div>
-        </div>
+          {/* Content */}
+          <div className="overflow-y-auto flex-grow p-5">
+            {/* Statistics Section */}
+            <motion.section 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="mb-8"
+            >
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center">
+                <FiActivity className="mr-2" size={16} />
+                Customer Statistics
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard 
+                  icon={<FiDollarSign />} 
+                  label="Total Spent" 
+                  value={`₹${totalSpent.toFixed(2)}`} 
+                  color={{ bg: 'bg-green-50', text: 'text-green-600' }}
+                />
+                <StatCard 
+                  icon={<FiPackage />} 
+                  label="Total Bookings" 
+                  value={totalBookings} 
+                  color={{ bg: 'bg-blue-50', text: 'text-blue-600' }}
+                />
+                <StatCard 
+                  icon={<FiClock />} 
+                  label="Active Bookings" 
+                  value={activeBookings} 
+                  color={{ bg: 'bg-yellow-50', text: 'text-yellow-600' }}
+                />
+                <StatCard 
+                  icon={<FiAlertCircle />} 
+                  label="Outstanding" 
+                  value={`₹${totalOutstanding.toFixed(2)}`} 
+                  color={{ bg: 'bg-red-50', text: 'text-red-600' }}
+                />
+              </div>
+            </motion.section>
 
-        {/* Footer */}
-        <div className="flex justify-end space-x-4 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-          <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300 font-semibold">Close</button>
-        </div>
-      </div>
-    </div>
+            {/* Booking History Section */}
+            <motion.section
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.15 }}
+            >
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center">
+                <FiList className="mr-2" size={16} />
+                Booking History
+              </h3>
+              
+              {bookings.length > 0 ? (
+                <motion.ul 
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: {
+                      opacity: 1,
+                      transition: {
+                        staggerChildren: 0.05
+                      }
+                    }
+                  }}
+                >
+                  {bookings.map(booking => (
+                    <BookingItem 
+                      key={booking.id} 
+                      booking={booking} 
+                      getItemName={getItemName} 
+                    />
+                  ))}
+                </motion.ul>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-10"
+                >
+                  <div className="bg-gray-100 p-5 rounded-full inline-block mb-4">
+                    <FiPackage size={32} className="text-gray-400" />
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-700 mb-1">No bookings found</h4>
+                  <p className="text-gray-500">This customer hasn't made any bookings yet</p>
+                </motion.div>
+              )}
+            </motion.section>
+          </div>
+
+          {/* Footer */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="p-4 border-t border-gray-100 bg-gray-50"
+          >
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="w-full py-2.5 px-4 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            >
+              Close History
+            </button>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 

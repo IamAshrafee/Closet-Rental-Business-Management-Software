@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Stock from "./pages/Stock";
 import Customers from "./pages/Customers";
 import Bookings from "./pages/Bookings";
+import Reminders from "./pages/Reminders";
 import Login from "./pages/Login";
 import Registration from "./pages/Registration";
 import { store } from "./store";
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
       {
         path: "/bookings",
         element: <Bookings />,
+      },
+      {
+        path: "/reminders",
+        element: <Reminders />,
       },
     ],
   },

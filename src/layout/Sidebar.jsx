@@ -1,5 +1,5 @@
 import { FaUserFriends, FaSignOutAlt } from "react-icons/fa";
-import { MdInventory, MdSpaceDashboard } from "react-icons/md";
+import { MdInventory, MdSpaceDashboard, MdNotificationsActive } from "react-icons/md";
 import React, { useState, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FiMenu } from "react-icons/fi";
@@ -55,6 +55,14 @@ const SidebarContent = ({ onLinkClick, activeLink, normalLink }) => {
           >
             <FaUserFriends size={28} />
             <p className="font-poppins text-[18px]">Bookings</p>
+          </NavLink>
+          <NavLink
+            to="/reminders"
+            className={({ isActive }) => (isActive ? activeLink : normalLink)}
+            onClick={onLinkClick}
+          >
+            <MdNotificationsActive size={28} />
+            <p className="font-poppins text-[18px]">Reminders</p>
           </NavLink>
         </div>
       </div>

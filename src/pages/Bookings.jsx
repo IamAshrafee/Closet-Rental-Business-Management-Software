@@ -4,12 +4,13 @@ import AddNewBookingForm from "../modals/AddNewBookingForm";
 import BookingsCard from "../cards/BookingsCard";
 import BookingInformationPopup from "../modals/BookingInformationPopup";
 import { useSelector } from "react-redux";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getDatabase, ref, onValue, remove } from "firebase/database";
 
 const Bookings = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [editingBooking, setEditingBooking] = useState(null);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
@@ -31,20 +32,31 @@ const Bookings = () => {
     }
   }, [db, userInfo]);
 
-  const handleOpenAddModal = () => setAddModalOpen(true);
+  const handleOpenAddModal = () => {
+    setEditingBooking(null);
+    setAddModalOpen(true);
+  };
   const handleCloseAddModal = () => setAddModalOpen(false);
 
   const handleOpenInfoModal = (booking) => setSelectedBooking(booking);
   const handleCloseInfoModal = () => setSelectedBooking(null);
 
   const handleEditBooking = (booking) => {
-    console.log("Editing booking:", booking.id);
-    // Here you would typically open an edit form
+    setEditingBooking(booking);
+    setAddModalOpen(true);
   };
 
   const handleDeleteBooking = (booking) => {
-    console.log("Deleting booking:", booking.id);
-    // Here you would typically show a confirmation dialog
+    if (window.confirm("Are you sure you want to delete this booking?")) {
+      const bookingRef = ref(db, `users/${userInfo.uid}/bookings/${booking.id}`);
+      remove(bookingRef)
+        .then(() => {
+          console.log("Booking deleted successfully");
+        })
+        .catch((error) => {
+          console.error("Error deleting booking: ", error);
+        });
+    }
   };
 
   return (
@@ -78,7 +90,7 @@ const Bookings = () => {
         </div>
 
       </div>
-      {isAddModalOpen && <AddNewBookingForm onClose={handleCloseAddModal} />}
+      {isAddModalOpen && <AddNewBookingForm onClose={handleCloseAddModal} booking={editingBooking} />}
       {selectedBooking && <BookingInformationPopup booking={selectedBooking} onClose={handleCloseInfoModal} />}
     </Sidebar>
   );

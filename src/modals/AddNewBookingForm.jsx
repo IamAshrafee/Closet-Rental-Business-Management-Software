@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiPlus, FiTrash2, FiUser, FiBox, FiCalendar, FiDollarSign, FiFileText, FiChevronDown, FiCheck, FiInfo } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getDatabase, ref, onValue, push, set } from 'firebase/database';
+import { getDatabase, ref, onValue, push, set, update } from 'firebase/database';
 import { useSelector } from 'react-redux';
 
 // Reusable UI Components
@@ -96,7 +96,7 @@ const Alert = ({ type, message, onClose }) => (
   </motion.div>
 );
 
-const AddNewBookingForm = ({ onClose }) => {
+const AddNewBookingForm = ({ onClose, booking }) => {
   const [bookingDetails, setBookingDetails] = useState({
     customerId: '',
     items: [],
@@ -119,6 +119,12 @@ const AddNewBookingForm = ({ onClose }) => {
   const [stockItems, setStockItems] = useState([]);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
+
+  useEffect(() => {
+    if (booking) {
+      setBookingDetails(booking);
+    }
+  }, [booking]);
 
   useEffect(() => {
     if (userInfo) {
@@ -332,18 +338,23 @@ const AddNewBookingForm = ({ onClose }) => {
     };
     
     try {
-      const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
-      const newBookingRef = push(bookingsRef);
-      await set(newBookingRef, dataToSave);
-      
-      setAlert({ show: true, type: 'success', message: 'Booking created successfully!' });
+      if (booking) {
+        const bookingRef = ref(db, `users/${userInfo.uid}/bookings/${booking.id}`);
+        await update(bookingRef, dataToSave);
+        setAlert({ show: true, type: 'success', message: 'Booking updated successfully!' });
+      } else {
+        const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
+        const newBookingRef = push(bookingsRef);
+        await set(newBookingRef, dataToSave);
+        setAlert({ show: true, type: 'success', message: 'Booking updated successfully!' });
+      }
       
       // Close form after a delay
       setTimeout(() => {
         onClose();
       }, 2000);
     } catch (error) {
-      setAlert({ show: true, type: 'error', message: 'Failed to create booking. Please try again.' });
+      setAlert({ show: true, type: 'error', message: 'Failed to save booking. Please try again.' });
     } finally {
       setSubmitting(false);
     }
@@ -410,7 +421,7 @@ const AddNewBookingForm = ({ onClose }) => {
         onSubmit={handleSubmit}
       >
         <div className="flex justify-between items-center p-6 border-b bg-white rounded-t-xl sticky top-0 z-10">
-          <h2 className="text-2xl font-bold text-gray-800">Create New Booking</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{booking ? 'Edit Booking' : 'Create New Booking'}</h2>
           <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-800 transition-colors">
             <IoMdClose size={24} />
           </button>
@@ -718,7 +729,7 @@ const AddNewBookingForm = ({ onClose }) => {
                 </svg>
                 Processing...
               </>
-            ) : 'Save Booking'}
+            ) : booking ? 'Save Changes' : 'Save Booking'}
           </button>
         </div>
       </form>

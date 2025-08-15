@@ -4,13 +4,14 @@ import AddCustomerPopup from "../modals/AddCustomerPopup";
 import CustomerCard from "../cards/CustomerCard";
 import CustomerInformationPopup from "../modals/CustomerInformationPopup";
 import { useSelector } from "react-redux";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getDatabase, ref, onValue, remove } from "firebase/database";
 
 const Customers = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customers, setCustomers] = useState([]);
+  const [editingCustomer, setEditingCustomer] = useState(null);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
@@ -32,7 +33,10 @@ const Customers = () => {
     }
   }, [db, userInfo]);
 
-  const handleOpenAddModal = () => setAddModalOpen(true);
+  const handleOpenAddModal = () => {
+    setEditingCustomer(null);
+    setAddModalOpen(true);
+  };
   const handleCloseAddModal = () => setAddModalOpen(false);
 
   const handleOpenInfoModal = (customer) => {
@@ -42,6 +46,24 @@ const Customers = () => {
   const handleCloseInfoModal = () => {
     setSelectedCustomer(null);
     setInfoModalOpen(false);
+  };
+
+  const handleEditCustomer = (customer) => {
+    setEditingCustomer(customer);
+    setAddModalOpen(true);
+  };
+
+  const handleDeleteCustomer = (customer) => {
+    if (window.confirm("Are you sure you want to delete this customer?")) {
+      const customerRef = ref(db, `users/${userInfo.uid}/customers/${customer.id}`);
+      remove(customerRef)
+        .then(() => {
+          console.log("Customer deleted successfully");
+        })
+        .catch((error) => {
+          console.error("Error deleting customer: ", error);
+        });
+    }
   };
 
   return (
@@ -65,12 +87,16 @@ const Customers = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {customers.map((customer) => (
             <div key={customer.id} onClick={() => handleOpenInfoModal(customer)} className="cursor-pointer">
-              <CustomerCard customer={customer} />
+              <CustomerCard 
+                customer={customer} 
+                onEdit={(e) => { e.stopPropagation(); handleEditCustomer(customer); }} 
+                onDelete={(e) => { e.stopPropagation(); handleDeleteCustomer(customer); }} 
+              />
             </div>
           ))}
         </div>
       </div>
-      {isAddModalOpen && <AddCustomerPopup onClose={handleCloseAddModal} />}
+      {isAddModalOpen && <AddCustomerPopup onClose={handleCloseAddModal} customer={editingCustomer} />}
       {isInfoModalOpen && <CustomerInformationPopup customer={selectedCustomer} onClose={handleCloseInfoModal} />}
     </Sidebar>
   );

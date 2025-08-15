@@ -1,7 +1,7 @@
 import React from 'react';
 import { FiEdit, FiTrash2, FiDollarSign, FiPackage, FiEye, FiCalendar } from 'react-icons/fi';
 
-const StockItemCard = ({ item }) => {
+const StockItemCard = ({ item, onEdit, onDelete }) => {
   if (!item) {
     return null;
   }
@@ -79,10 +79,10 @@ const StockItemCard = ({ item }) => {
           <div className="flex justify-between items-start mb-3">
             <h3 className="text-xl font-bold text-gray-800 truncate pr-2">{name}</h3>
             <div className="flex space-x-2">
-              <button className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
+              <button onClick={onEdit} className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
                 <FiEdit className="text-gray-600" />
               </button>
-              <button className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
+              <button onClick={onDelete} className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
                 <FiTrash2 className="text-red-500" />
               </button>
             </div>

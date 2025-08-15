@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
-import { getDatabase, ref, push, set } from 'firebase/database';
+import { getDatabase, ref, push, set, update } from 'firebase/database';
 import { useSelector } from 'react-redux';
 
-const AddCustomerPopup = ({ onClose }) => {
+const AddCustomerPopup = ({ onClose, customer }) => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -18,6 +18,12 @@ const AddCustomerPopup = ({ onClose }) => {
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
+  useEffect(() => {
+    if (customer) {
+      setFormData(customer);
+    }
+  }, [customer]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -30,12 +36,19 @@ const AddCustomerPopup = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const customersRef = ref(db, `users/${userInfo.uid}/customers`);
-      const newCustomerRef = push(customersRef);
-      await set(newCustomerRef, formData);
+      if (customer) {
+        // Update existing customer
+        const customerRef = ref(db, `users/${userInfo.uid}/customers/${customer.id}`);
+        await update(customerRef, formData);
+      } else {
+        // Add new customer
+        const customersRef = ref(db, `users/${userInfo.uid}/customers`);
+        const newCustomerRef = push(customersRef);
+        await set(newCustomerRef, formData);
+      }
       onClose();
     } catch (error) {
-      console.error("Error adding customer to database:", error);
+      console.error("Error saving customer to database:", error);
     }
   };
 
@@ -51,7 +64,7 @@ const AddCustomerPopup = ({ onClose }) => {
       >
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800">Add New Customer</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{customer ? 'Edit Customer' : 'Add New Customer'}</h2>
           <button 
             type="button"
             onClick={onClose} 
@@ -97,11 +110,11 @@ const AddCustomerPopup = ({ onClose }) => {
             <label className="block text-sm font-medium text-gray-700">Parent's NID Number <span className="text-gray-500">(Optional)</span></label>
             <div className="mt-2 flex items-center gap-4">
                 <div className="flex items-center">
-                    <input type="radio" id="fatherNid" name="parentNidType" value="father" onChange={handleRadioChange} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" />
+                    <input type="radio" id="fatherNid" name="parentNidType" value="father" checked={formData.parentNidType === 'father'} onChange={handleRadioChange} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" />
                     <label htmlFor="fatherNid" className="ml-2 block text-sm font-medium text-gray-700">Father</label>
                 </div>
                 <div className="flex items-center">
-                    <input type="radio" id="motherNid" name="parentNidType" value="mother" onChange={handleRadioChange} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" />
+                    <input type="radio" id="motherNid" name="parentNidType" value="mother" checked={formData.parentNidType === 'mother'} onChange={handleRadioChange} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" />
                     <label htmlFor="motherNid" className="ml-2 block text-sm font-medium text-gray-700">Mother</label>
                 </div>
             </div>

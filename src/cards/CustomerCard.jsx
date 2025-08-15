@@ -1,7 +1,7 @@
 import React from 'react';
 import { FiEdit, FiTrash2, FiPhone, FiMapPin, FiUser, FiLink, FiCreditCard } from 'react-icons/fi';
 
-const CustomerCard = ({ customer }) => {
+const CustomerCard = ({ customer, onEdit, onDelete }) => {
   if (!customer) {
     return null;
   }
@@ -69,10 +69,10 @@ const CustomerCard = ({ customer }) => {
         )}
 
         <div className="mt-4 flex justify-end space-x-3">
-          <button className="p-2 rounded-full hover:bg-gray-200 transition-colors duration-200">
+          <button onClick={onEdit} className="p-2 rounded-full hover:bg-gray-200 transition-colors duration-200">
             <FiEdit className="text-gray-600" />
           </button>
-          <button className="p-2 rounded-full hover:bg-gray-200 transition-colors duration-200">
+          <button onClick={onDelete} className="p-2 rounded-full hover:bg-gray-200 transition-colors duration-200">
             <FiTrash2 className="text-red-500" />
           </button>
         </div>

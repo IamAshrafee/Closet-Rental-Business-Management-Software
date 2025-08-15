@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
-import { getDatabase, ref, push, set } from 'firebase/database';
+import { getDatabase, ref, push, set, update } from 'firebase/database';
 import { useSelector } from 'react-redux';
 
-const AddItemsForm = ({ onClose }) => {
+const AddItemsForm = ({ onClose, item }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -34,6 +34,15 @@ const AddItemsForm = ({ onClose }) => {
   const [isUploading, setIsUploading] = useState(false);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
+
+  useEffect(() => {
+    if (item) {
+      setFormData(item);
+      if (item.photo) {
+        setImageUrl(item.photo);
+      }
+    }
+  }, [item]);
 
   const uploadImage = async (file) => {
     setIsUploading(true);
@@ -126,12 +135,17 @@ const AddItemsForm = ({ onClose }) => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        const itemsRef = ref(db, `users/${userInfo.uid}/items`);
-        const newItemRef = push(itemsRef);
-        await set(newItemRef, { ...formData, rented: 0 });
+        if (item) {
+          const itemRef = ref(db, `users/${userInfo.uid}/items/${item.id}`);
+          await update(itemRef, formData);
+        } else {
+          const itemsRef = ref(db, `users/${userInfo.uid}/items`);
+          const newItemRef = push(itemsRef);
+          await set(newItemRef, { ...formData, rented: 0 });
+        }
         onClose();
       } catch (error) {
-        console.error("Error adding item to database:", error);
+        console.error("Error saving item to database:", error);
       }
     }
   };
@@ -148,7 +162,7 @@ const AddItemsForm = ({ onClose }) => {
       >
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800">Add New Item</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{item ? 'Edit Item' : 'Add New Item'}</h2>
           <button 
             type="button"
             onClick={onClose} 

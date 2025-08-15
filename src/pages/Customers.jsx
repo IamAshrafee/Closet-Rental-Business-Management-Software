@@ -6,6 +6,7 @@ import CustomerInformationPopup from "../modals/CustomerInformationPopup";
 import CustomerHistoryPopup from "../modals/CustomerHistoryPopup";
 import { useSelector } from "react-redux";
 import { getDatabase, ref, onValue, remove } from "firebase/database";
+import { FiPlus, FiSearch } from "react-icons/fi";
 
 const Customers = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -16,52 +17,35 @@ const Customers = () => {
   const [bookings, setBookings] = useState([]);
   const [stockItems, setStockItems] = useState([]);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
     if (userInfo) {
       const customersRef = ref(db, `users/${userInfo.uid}/customers`);
-      onValue(customersRef, (snapshot) => {
+      const unsubscribeCustomers = onValue(customersRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          const customersList = Object.keys(data).map((key) => ({
-            id: key,
-            ...data[key],
-          }));
-          setCustomers(customersList);
-        } else {
-          setCustomers([]);
-        }
+        setCustomers(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
       });
 
       const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
-      onValue(bookingsRef, (snapshot) => {
+      const unsubscribeBookings = onValue(bookingsRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          const bookingsList = Object.keys(data).map((key) => ({
-            id: key,
-            ...data[key],
-          }));
-          setBookings(bookingsList);
-        } else {
-          setBookings([]);
-        }
+        setBookings(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
       });
 
       const itemsRef = ref(db, `users/${userInfo.uid}/items`);
-      onValue(itemsRef, (snapshot) => {
+      const unsubscribeItems = onValue(itemsRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          const itemsList = Object.keys(data).map((key) => ({
-            id: key,
-            ...data[key],
-          }));
-          setStockItems(itemsList);
-        } else {
-          setStockItems([]);
-        }
+        setStockItems(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
       });
+
+      return () => {
+        unsubscribeCustomers();
+        unsubscribeBookings();
+        unsubscribeItems();
+      };
     }
   }, [db, userInfo]);
 
@@ -84,69 +68,81 @@ const Customers = () => {
     });
   }, [customers, bookings]);
 
+  const filteredCustomers = useMemo(() => {
+    if (!searchQuery) return customerStats;
+    const query = searchQuery.toLowerCase();
+    return customerStats.filter(customer => 
+      customer.name?.toLowerCase().includes(query) ||
+      customer.phone?.includes(query)
+    );
+  }, [customerStats, searchQuery]);
+
   const handleOpenAddModal = () => {
     setEditingCustomer(null);
     setAddModalOpen(true);
   };
+
   const handleCloseAddModal = () => setAddModalOpen(false);
 
   const handleOpenInfoModal = (customer) => {
     setSelectedCustomer(customer);
     setInfoModalOpen(true);
   };
-  const handleCloseInfoModal = () => {
-    setSelectedCustomer(null);
-    setInfoModalOpen(false);
-  };
+
+  const handleCloseInfoModal = () => setInfoModalOpen(false);
 
   const handleOpenHistoryModal = (customer) => {
     setSelectedCustomer(customer);
     setHistoryModalOpen(true);
   };
-  const handleCloseHistoryModal = () => {
-    setSelectedCustomer(null);
-    setHistoryModalOpen(false);
-  };
+
+  const handleCloseHistoryModal = () => setHistoryModalOpen(false);
 
   const handleEditCustomer = (customer) => {
     setEditingCustomer(customer);
     setAddModalOpen(true);
   };
 
-  const handleDeleteCustomer = (customer) => {
-    if (window.confirm("Are you sure you want to delete this customer?")) {
-      const customerRef = ref(db, `users/${userInfo.uid}/customers/${customer.id}`);
-      remove(customerRef)
-        .then(() => {
-          console.log("Customer deleted successfully");
-        })
-        .catch((error) => {
-          console.error("Error deleting customer: ", error);
-        });
+  const handleDeleteCustomer = async (customer) => {
+    if (window.confirm(`Are you sure you want to delete ${customer.name}?`)) {
+      try {
+        const customerRef = ref(db, `users/${userInfo.uid}/customers/${customer.id}`);
+        await remove(customerRef);
+      } catch (error) {
+        console.error("Error deleting customer:", error);
+      }
     }
   };
 
   return (
     <Sidebar>
-      <div className="flex flex-col">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      <div className="flex flex-col h-full">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 px-4 md:px-0">
           <div className="mb-4 md:mb-0">
-            <h1 className="text-4xl font-bold font-poppins">Customers</h1>
-            <p className="font-poppins text-gray-500 mt-2">
-              Welcome to your customer management dashboard
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Customers</h1>
+            <p className="text-gray-500 mt-1 text-sm md:text-base">
+              {filteredCustomers.length} {filteredCustomers.length === 1 ? 'customer' : 'customers'} registered
             </p>
           </div>
-          <button
-            onClick={handleOpenAddModal}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 font-semibold"
-          >
-            Add Customer
-          </button>
+          
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium"
+            >
+              <FiPlus className="mr-2" size={18} />
+              <span>Add Customer</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {customerStats.map((customer) => (
-            <div key={customer.id} onClick={() => handleOpenInfoModal(customer)} className="cursor-pointer">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
+          {filteredCustomers.map((customer) => (
+            <div 
+              key={customer.id} 
+              onClick={() => handleOpenInfoModal(customer)} 
+              className="cursor-pointer"
+            >
               <CustomerCard 
                 customer={customer} 
                 onEdit={(e) => { e.stopPropagation(); handleEditCustomer(customer); }} 
@@ -157,9 +153,26 @@ const Customers = () => {
           ))}
         </div>
       </div>
-      {isAddModalOpen && <AddCustomerPopup onClose={handleCloseAddModal} customer={editingCustomer} />}
-      {isInfoModalOpen && <CustomerInformationPopup customer={selectedCustomer} onClose={handleCloseInfoModal} />}
-      {isHistoryModalOpen && <CustomerHistoryPopup customer={selectedCustomer} bookings={selectedCustomer.bookings} stockItems={stockItems} onClose={handleCloseHistoryModal} />}
+
+      <AddCustomerPopup 
+        isOpen={isAddModalOpen}
+        onClose={handleCloseAddModal} 
+        customer={editingCustomer} 
+      />
+      
+      <CustomerInformationPopup 
+        isOpen={isInfoModalOpen}
+        customer={selectedCustomer} 
+        onClose={handleCloseInfoModal} 
+      />
+      
+      <CustomerHistoryPopup 
+        isOpen={isHistoryModalOpen}
+        customer={selectedCustomer} 
+        bookings={selectedCustomer?.bookings || []} 
+        stockItems={stockItems} 
+        onClose={handleCloseHistoryModal} 
+      />
     </Sidebar>
   );
 };

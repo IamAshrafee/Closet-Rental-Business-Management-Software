@@ -1,5 +1,30 @@
 import React from 'react';
-import { FiEdit, FiTrash2, FiPhone, FiMapPin, FiUser, FiLink, FiCreditCard, FiDollarSign, FiPackage, FiActivity, FiAlertCircle, FiBookOpen } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiPhone, FiMapPin, FiUser, FiLink, FiCreditCard, FiDollarSign, FiPackage, FiActivity, FiAlertCircle, FiBookOpen, FiClock } from 'react-icons/fi';
+
+const timeSince = (date) => {
+  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+  let interval = seconds / 31536000;
+  if (interval > 1) {
+    return new Date(date).toLocaleDateString();
+  }
+  interval = seconds / 2592000;
+  if (interval > 1) {
+    return Math.floor(interval) + " months ago";
+  }
+  interval = seconds / 86400;
+  if (interval > 1) {
+    return Math.floor(interval) + " days ago";
+  }
+  interval = seconds / 3600;
+  if (interval > 1) {
+    return Math.floor(interval) + " hours ago";
+  }
+  interval = seconds / 60;
+  if (interval > 1) {
+    return Math.floor(interval) + " minutes ago";
+  }
+  return Math.floor(seconds) + " seconds ago";
+};
 
 const CustomerCard = ({ customer, onEdit, onDelete, onHistoryClick }) => {
   if (!customer) {
@@ -14,6 +39,7 @@ const CustomerCard = ({ customer, onEdit, onDelete, onHistoryClick }) => {
     totalBookings,
     activeBookings,
     totalOutstanding,
+    createdAt
   } = customer;
 
   return (
@@ -40,6 +66,12 @@ const CustomerCard = ({ customer, onEdit, onDelete, onHistoryClick }) => {
           <FiMapPin className="mr-3 mt-1" />
           <span className="flex-1">{address}</span>
         </div>
+        {createdAt && (
+          <div className="flex items-center text-gray-500 text-xs">
+            <FiClock className="mr-1.5" />
+            Member since {timeSince(createdAt)}
+          </div>
+        )}
       </div>
 
       <div className="bg-gray-50 p-4 border-t">

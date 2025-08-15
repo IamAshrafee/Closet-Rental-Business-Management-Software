@@ -44,7 +44,7 @@ const AddCustomerPopup = ({ onClose, customer }) => {
         // Add new customer
         const customersRef = ref(db, `users/${userInfo.uid}/customers`);
         const newCustomerRef = push(customersRef);
-        await set(newCustomerRef, formData);
+        await set(newCustomerRef, { ...formData, createdAt: new Date().toISOString() });
       }
       onClose();
     } catch (error) {

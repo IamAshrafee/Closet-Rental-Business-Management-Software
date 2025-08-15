@@ -5,6 +5,8 @@ import StockItemCard from "../cards/StockItemCard";
 import ItemInformationPopup from "../modals/ItemInformationPopup";
 import { useSelector } from "react-redux";
 import { getDatabase, ref, onValue, remove } from "firebase/database";
+import { motion, AnimatePresence } from "framer-motion";
+import EmptyState from "../components/EmptyState";
 
 const Stock = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -12,11 +14,13 @@ const Stock = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [items, setItems] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
     if (userInfo) {
+      setIsLoading(true);
       const itemsRef = ref(db, `users/${userInfo.uid}/items`);
       onValue(itemsRef, (snapshot) => {
         const data = snapshot.val();
@@ -29,6 +33,7 @@ const Stock = () => {
         } else {
           setItems([]);
         }
+        setIsLoading(false);
       });
     }
   }, [db, userInfo]);
@@ -66,38 +71,101 @@ const Stock = () => {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
+  };
+
   return (
-    <Sidebar>
-      <div className="flex flex-col">
-        <div className="flex justify-between items-center mb-8">
+ <Sidebar>
+      <div className="flex flex-col px-4 py-4 sm:px-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
           <div>
-            <h1 className="text-4xl font-bold font-poppins">Stock</h1>
-            <p className="font-poppins text-gray-500 mt-2">
-              Welcome to your stock management dashboard
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Inventory</h1>
+            <p className="text-gray-500 text-sm sm:text-base">
+              {items.length} {items.length === 1 ? 'item' : 'items'} in stock
             </p>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleOpenAddModal}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 font-semibold"
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm sm:text-base font-medium shadow-sm w-full sm:w-auto"
           >
-            Add Item
-          </button>
+            Add New Item
+          </motion.button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {items.map((item) => (
-            <div key={item.id} onClick={() => handleOpenInfoModal(item)} className="cursor-pointer">
-                <StockItemCard 
-                  item={item} 
-                  onEdit={(e) => { e.stopPropagation(); handleEditItem(item); }}
-                  onDelete={(e) => { e.stopPropagation(); handleDeleteItem(item); }}
-                />
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+            {[...Array(10)].map((_, index) => (
+              <div key={index} className="bg-gray-100 rounded-lg h-40 animate-pulse"></div>
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <EmptyState 
+            title="No Items Found"
+            description="Add your first item to get started"
+            buttonText="Add Item"
+            onButtonClick={handleOpenAddModal}
+          />
+        ) : (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"
+          >
+            <AnimatePresence>
+              {items.map((item) => (
+                <motion.div
+                  key={item.id}
+                  variants={itemVariants}
+                  layout
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                >
+                  <StockItemCard 
+                    item={item} 
+                    onClick={() => handleOpenInfoModal(item)}
+                    onEdit={(e) => { e.stopPropagation(); handleEditItem(item); }}
+                    onDelete={(e) => { e.stopPropagation(); handleDeleteItem(item); }}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
       </div>
-      {isAddModalOpen && <AddItemsForm onClose={handleCloseAddModal} item={editingItem} />}
-      {isInfoModalOpen && <ItemInformationPopup item={selectedItem} onClose={handleCloseInfoModal} />}
+
+      {/* Modals */}
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <AddItemsForm onClose={handleCloseAddModal} item={editingItem} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isInfoModalOpen && (
+          <ItemInformationPopup
+            item={selectedItem}
+            onClose={handleCloseInfoModal}
+            onEdit={() => {
+              handleCloseInfoModal();
+              handleEditItem(selectedItem);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </Sidebar>
   );
 };

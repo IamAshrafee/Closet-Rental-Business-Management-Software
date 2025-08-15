@@ -1,7 +1,8 @@
 import React from 'react';
 import { FiEdit, FiTrash2, FiDollarSign, FiPackage, FiEye, FiCalendar } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 
-const StockItemCard = ({ item, onEdit, onDelete }) => {
+const StockItemCard = ({ item, onClick, onEdit, onDelete }) => {
   if (!item) {
     return null;
   }
@@ -14,7 +15,6 @@ const StockItemCard = ({ item, onEdit, onDelete }) => {
     sizeFrom,
     sizeTo,
     colors,
-    long,
     rentOption,
     rentValue,
     rentPerDay,
@@ -33,7 +33,7 @@ const StockItemCard = ({ item, onEdit, onDelete }) => {
       case 'per-day':
         return `₹${rentPerDay}/day`;
       case 'range':
-        return `₹${rentFrom} - ₹${rentTo}`;
+        return `₹${rentFrom}-${rentTo}`;
       default:
         return 'N/A';
     }
@@ -44,7 +44,7 @@ const StockItemCard = ({ item, onEdit, onDelete }) => {
       case 'fixed':
         return sizeValue;
       case 'range':
-        return `${sizeFrom} - ${sizeTo}`;
+        return `${sizeFrom}-${sizeTo}`;
       case 'free':
         return 'Free size';
       default:
@@ -55,103 +55,108 @@ const StockItemCard = ({ item, onEdit, onDelete }) => {
   const progress = rented && target ? Math.min((rented / target) * 100, 100) : 0;
 
   return (
-    <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out overflow-hidden transform hover:-translate-y-1 flex flex-col md:flex-row h-full">
-      {/* Image Section */}
-      <div className="md:w-2/5 lg:w-1/3 relative overflow-hidden bg-gray-100">
+    <motion.div
+      whileHover={{ y: -3 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 ease-in-out cursor-pointer flex h-40 border border-gray-100 overflow-hidden"
+    >
+      {/* Image Section - Optimized for 9:16 */}
+      <div className="relative w-24 h-full flex-shrink-0">
         <img 
-          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
-          src={photo} 
-          alt={name} 
+          className="w-full h-full object-cover"
+          src={photo || 'https://via.placeholder.com/96x160?text=No+Image'} 
+          alt={name}
+          loading="lazy"
         />
-        <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold ${
+        <div className={`absolute top-2 right-2 px-2 py-0.5 rounded text-xs font-medium ${
           availability === 'available' 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800'
+            ? 'bg-green-50 text-green-700 border border-green-100' 
+            : 'bg-red-50 text-red-700 border border-red-100'
         }`}>
-          {availability}
+          {availability.charAt(0).toUpperCase() + availability.slice(1)}
         </div>
       </div>
       
       {/* Content Section */}
-      <div className="md:w-3/5 lg:w-2/3 p-5 flex flex-col justify-between">
-        <div>
-          {/* Header */}
-          <div className="flex justify-between items-start mb-3">
-            <h3 className="text-xl font-bold text-gray-800 truncate pr-2">{name}</h3>
-            <div className="flex space-x-2">
-              <button onClick={onEdit} className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
-                <FiEdit className="text-gray-600" />
-              </button>
-              <button onClick={onDelete} className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
-                <FiTrash2 className="text-red-500" />
-              </button>
-            </div>
+      <div className="p-3 flex flex-col flex-grow overflow-hidden">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-1">
+          <h3 className="text-sm font-semibold text-gray-900 line-clamp-1">{name}</h3>
+          <div className="flex space-x-1">
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => { e.stopPropagation(); onEdit(e); }}
+              className="p-1 rounded hover:bg-gray-50 text-gray-500"
+              aria-label="Edit"
+            >
+              <FiEdit size={14} />
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => { e.stopPropagation(); onDelete(e); }}
+              className="p-1 rounded hover:bg-gray-50 text-red-400"
+              aria-label="Delete"
+            >
+              <FiTrash2 size={14} />
+            </motion.button>
           </div>
-          
-          {/* Price */}
-          <div className="flex items-center mb-4">
-            <FiDollarSign className="text-indigo-600 mr-1" />
-            <span className="text-2xl font-bold text-gray-800">{getPrice()}</span>
-            {rentOption === 'per-day' && (
-              <span className="text-sm text-gray-500 ml-2 flex items-center">
-                <FiCalendar className="mr-1" /> per day
-              </span>
-            )}
-          </div>
-          
-          {/* Details Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-            <div className="flex items-center">
-              <FiPackage className="text-gray-500 mr-2" />
-              <div>
-                <p className="text-xs text-gray-500">Size</p>
-                <p className="font-medium text-gray-800">{getSize()}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full mr-2 border border-gray-300" style={{ backgroundColor: colors }}></div>
-              <div>
-                <p className="text-xs text-gray-500">Color</p>
-                <p className="font-medium text-gray-800">{colors}</p>
-              </div>
-            </div>
-            
-            {long && (
-              <div className="flex items-center">
-                <FiEye className="text-gray-500 mr-2" />
-                <div>
-                  <p className="text-xs text-gray-500">Length</p>
-                  <p className="font-medium text-gray-800">{long}</p>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Description */}
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{description}</p>
         </div>
+        
+        {/* Price */}
+        <div className="flex items-center mb-2">
+          <FiDollarSign className="text-indigo-500 mr-1" size={14} />
+          <span className="text-base font-bold text-gray-800">{getPrice()}</span>
+          {rentOption === 'per-day' && (
+            <span className="text-xs text-gray-500 ml-1 flex items-center">
+              <FiCalendar className="mr-0.5" size={10} />/day
+            </span>
+          )}
+        </div>
+        
+        {/* Details Row */}
+        <div className="flex items-center space-x-4 text-xs text-gray-600 mb-2">
+          <div className="flex items-center">
+            <FiPackage className="mr-1" size={12} />
+            <span>{getSize()}</span>
+          </div>
+          {colors && (
+            <div className="flex items-center">
+              <div 
+                className="w-3 h-3 rounded-full mr-1 border border-gray-200" 
+                style={{ backgroundColor: colors }}
+              />
+              <span className="truncate max-w-[80px]">{colors}</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Description (only visible if space available) */}
+        <p className="text-xs text-gray-500 line-clamp-2 mb-2 hidden sm:block">
+          {description}
+        </p>
         
         {/* Progress Section */}
         {target && (
           <div className="mt-auto">
-            <div className="flex justify-between mb-1">
-              <span className="text-sm font-medium text-gray-700">Rental Progress</span>
-              <span className="text-sm font-medium text-gray-700">{rented || 0} / {target}</span>
+            <div className="flex justify-between mb-1 text-xs">
+              <span className="text-gray-600">Progress</span>
+              <span className="font-medium">{rented || 0}/{target}</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" 
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <div className="text-right mt-1">
-              <span className="text-xs text-gray-500">{Math.round(progress)}% rented</span>
+            <div className="w-full bg-gray-100 rounded-full h-1.5">
+              <motion.div 
+                className="bg-gradient-to-r from-indigo-400 to-indigo-500 h-1.5 rounded-full" 
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.6 }}
+              />
             </div>
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

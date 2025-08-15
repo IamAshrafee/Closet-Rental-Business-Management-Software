@@ -1,10 +1,59 @@
 import React, { useState, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
+import { FiUploadCloud } from 'react-icons/fi';
 import { getDatabase, ref, push, set, update } from 'firebase/database';
 import { useSelector } from 'react-redux';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const InputField = ({ label, name, type = 'text', required = false, placeholder = '', min, step, formData, errors, handleChange, children }) => (
+  <div className="mb-4">
+    <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {children || (
+      <input
+        type={type}
+        id={name}
+        name={name}
+        value={formData[name]}
+        onChange={handleChange}
+        placeholder={placeholder}
+        min={min}
+        step={step}
+        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+          errors[name] ? 'border-red-500' : 'border-gray-300'
+        }`}
+      />
+    )}
+    {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
+  </div>
+);
+
+const RadioGroup = ({ label, name, options, formData, handleRadioChange, className = '' }) => (
+  <div className={`mb-4 ${className}`}>
+    <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+    <div className="space-y-2">
+      {options.map((option) => (
+        <div key={option.value} className="flex items-center">
+          <input
+            type="radio"
+            id={`${name}-${option.value}`}
+            name={name}
+            checked={formData[name] === option.value}
+            onChange={() => handleRadioChange(name, option.value)}
+            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+          />
+          <label htmlFor={`${name}-${option.value}`} className="ml-3 block text-sm text-gray-700">
+            {option.label}
+          </label>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 const AddItemsForm = ({ onClose, item }) => {
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     name: '',
     category: '',
     sizeOption: 'fixed',
@@ -28,10 +77,13 @@ const AddItemsForm = ({ onClose, item }) => {
     target: '',
     description: '',
     photo: ''
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
   const [imageUrl, setImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
@@ -65,6 +117,7 @@ const AddItemsForm = ({ onClose, item }) => {
       setFormData(prev => ({ ...prev, photo: result.secure_url }));
     } catch (error) {
       console.error("Error uploading image:", error);
+      setErrors(prev => ({ ...prev, photo: 'Failed to upload image' }));
     } finally {
       setIsUploading(false);
     }
@@ -83,6 +136,9 @@ const AddItemsForm = ({ onClose, item }) => {
 
   const handleRadioChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: null }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -107,6 +163,7 @@ const AddItemsForm = ({ onClose, item }) => {
     if (!formData.category.trim()) newErrors.category = 'Category is required';
     if (!formData.purchasePrice) newErrors.purchasePrice = 'Purchase price is required';
     if (!formData.target) newErrors.target = 'Target is required';
+    
     if (formData.sizeOption === 'fixed' && !formData.sizeValue.trim()) {
       newErrors.sizeValue = 'Size value is required';
     }
@@ -114,6 +171,7 @@ const AddItemsForm = ({ onClose, item }) => {
       if (!formData.sizeFrom.trim()) newErrors.sizeFrom = 'From value is required';
       if (!formData.sizeTo.trim()) newErrors.sizeTo = 'To value is required';
     }
+    
     if (formData.rentOption === 'fixed' && !formData.rentValue) {
       newErrors.rentValue = 'Rent price is required';
     }
@@ -124,539 +182,333 @@ const AddItemsForm = ({ onClose, item }) => {
       if (!formData.rentFrom) newErrors.rentFrom = 'From value is required';
       if (!formData.rentTo) newErrors.rentTo = 'To value is required';
     }
+    
     if (formData.availability === 'not-available' && !formData.availableFrom) {
       newErrors.availableFrom = 'Available date is required';
     }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      try {
-        if (item) {
-          const itemRef = ref(db, `users/${userInfo.uid}/items/${item.id}`);
-          await update(itemRef, formData);
-        } else {
-          const itemsRef = ref(db, `users/${userInfo.uid}/items`);
-          const newItemRef = push(itemsRef);
-          await set(newItemRef, { ...formData, rented: 0 });
-        }
-        onClose();
-      } catch (error) {
-        console.error("Error saving item to database:", error);
+    if (!validateForm()) return;
+    
+    setIsSubmitting(true);
+    try {
+      if (item) {
+        const itemRef = ref(db, `users/${userInfo.uid}/items/${item.id}`);
+        await update(itemRef, formData);
+      } else {
+        const itemsRef = ref(db, `users/${userInfo.uid}/items`);
+        const newItemRef = push(itemsRef);
+        await set(newItemRef, { ...formData, rented: 0 });
       }
+      onClose();
+    } catch (error) {
+      console.error("Error saving item to database:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4"
-      onClick={onClose}
-    >
-      <form 
-        onSubmit={handleSubmit}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-xl shadow-2xl w-11/12 md:w-full max-w-3xl max-h-[90vh] flex flex-col"
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4 overflow-y-auto"
+        onClick={onClose}
       >
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800">{item ? 'Edit Item' : 'Add New Item'}</h2>
-          <button 
-            type="button"
-            onClick={onClose} 
-            className="text-gray-500 hover:text-gray-800 transition-colors"
-            aria-label="Close form"
-          >
-            <IoMdClose size={24} />
-          </button>
-        </div>
-        
-        {/* Form Content (Scrollable) */}
-        <div className="space-y-6 overflow-y-auto p-6 flex-grow">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Name */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="name" 
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className={`mt-1 block w-full border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-              />
-              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
-            </div>
-            
-            {/* Category */}
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                Category <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="category" 
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className={`mt-1 block w-full border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 ${errors.category ? 'border-red-500' : 'border-gray-300'}`}
-              />
-              {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
-            </div>
-          </div>
-          
-          {/* Size */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
-            <div className="mt-2 space-y-2">
-              <div className="flex items-center">
-                <input 
-                  type="radio" 
-                  id="fixed-size" 
-                  name="sizeOption"
-                  checked={formData.sizeOption === 'fixed'} 
-                  onChange={() => handleRadioChange('sizeOption', 'fixed')} 
-                  className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                />
-                <label htmlFor="fixed-size" className="ml-3 block text-sm font-medium text-gray-700">Fixed size</label>
-              </div>
-              
-              {formData.sizeOption === 'fixed' && (
-                <div className="ml-7">
-                  <input 
-                    type="text" 
-                    name="sizeValue"
-                    value={formData.sizeValue}
-                    onChange={handleChange}
-                    placeholder="Enter size" 
-                    className={`mt-1 block w-full border rounded-md shadow-sm sm:text-sm p-2 ${errors.sizeValue ? 'border-red-500' : 'border-gray-300'}`}
-                  />
-                  {errors.sizeValue && <p className="mt-1 text-sm text-red-600">{errors.sizeValue}</p>}
-                </div>
-              )}
-              
-              <div className="flex items-center">
-                <input 
-                  type="radio" 
-                  id="size-range" 
-                  name="sizeOption"
-                  checked={formData.sizeOption === 'range'} 
-                  onChange={() => handleRadioChange('sizeOption', 'range')} 
-                  className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                />
-                <label htmlFor="size-range" className="ml-3 block text-sm font-medium text-gray-700">Size range</label>
-              </div>
-              
-              {formData.sizeOption === 'range' && (
-                <div className="ml-7 mt-1">
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <input 
-                        type="text" 
-                        name="sizeFrom"
-                        value={formData.sizeFrom}
-                        onChange={handleChange}
-                        placeholder="From" 
-                        className={`block w-full border rounded-md shadow-sm sm:text-sm p-2 ${errors.sizeFrom ? 'border-red-500' : 'border-gray-300'}`}
-                      />
-                      {errors.sizeFrom && <p className="mt-1 text-sm text-red-600">{errors.sizeFrom}</p>}
-                    </div>
-                    <div className="flex-1">
-                      <input 
-                        type="text" 
-                        name="sizeTo"
-                        value={formData.sizeTo}
-                        onChange={handleChange}
-                        placeholder="To" 
-                        className={`block w-full border rounded-md shadow-sm sm:text-sm p-2 ${errors.sizeTo ? 'border-red-500' : 'border-gray-300'}`}
-                      />
-                      {errors.sizeTo && <p className="mt-1 text-sm text-red-600">{errors.sizeTo}</p>}
-                    </div>
-                  </div>
-                  {errors.sizeRange && <p className="mt-1 text-sm text-red-600">{errors.sizeRange}</p>}
-                </div>
-              )}
-              
-              <div className="flex items-center">
-                <input 
-                  type="radio" 
-                  id="free-size" 
-                  name="sizeOption"
-                  checked={formData.sizeOption === 'free'} 
-                  onChange={() => handleRadioChange('sizeOption', 'free')} 
-                  className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                />
-                <label htmlFor="free-size" className="ml-3 block text-sm font-medium text-gray-700">Free size</label>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Long (optional) */}
-            <div>
-              <label htmlFor="long" className="block text-sm font-medium text-gray-700 mb-1">
-                Long (optional)
-              </label>
-              <input 
-                type="text" 
-                id="long" 
-                name="long"
-                value={formData.long}
-                onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
-              />
-            </div>
-            
-            {/* Colors */}
-            <div>
-              <label htmlFor="colors" className="block text-sm font-medium text-gray-700 mb-1">
-                Colors
-              </label>
-              <input 
-                type="text" 
-                id="colors" 
-                name="colors"
-                value={formData.colors}
-                onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Purchase Date (optional) */}
-            <div>
-              <label htmlFor="purchase-date" className="block text-sm font-medium text-gray-700 mb-1">
-                Purchase date (optional)
-              </label>
-              <input 
-                type="date" 
-                id="purchase-date" 
-                name="purchaseDate"
-                value={formData.purchaseDate}
-                onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
-              />
-            </div>
-            
-            {/* Purchase From (optional) */}
-            <div>
-              <label htmlFor="purchase-from" className="block text-sm font-medium text-gray-700 mb-1">
-                Purchase from (optional)
-              </label>
-              <input 
-                type="text" 
-                id="purchase-from" 
-                name="purchaseFrom"
-                value={formData.purchaseFrom}
-                onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Item's Country (optional) */}
-            <div>
-              <label htmlFor="item-country" className="block text-sm font-medium text-gray-700 mb-1">
-                Item's country (optional)
-              </label>
-              <input 
-                type="text" 
-                id="item-country" 
-                name="itemCountry"
-                value={formData.itemCountry}
-                onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
-              />
-            </div>
-            
-            {/* Purchase Price */}
-            <div>
-              <label htmlFor="purchase-price" className="block text-sm font-medium text-gray-700 mb-1">
-                Purchase price <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="number" 
-                id="purchase-price" 
-                name="purchasePrice"
-                value={formData.purchasePrice}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                className={`mt-1 block w-full border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 ${errors.purchasePrice ? 'border-red-500' : 'border-gray-300'}`}
-              />
-              {errors.purchasePrice && <p className="mt-1 text-sm text-red-600">{errors.purchasePrice}</p>}
-            </div>
-          </div>
-          
-          {/* Availability */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Availability</label>
-            <div className="mt-2 space-y-2">
-              <div className="flex items-center">
-                <input 
-                  type="radio" 
-                  id="available" 
-                  name="availability"
-                  checked={formData.availability === 'available'} 
-                  onChange={() => handleRadioChange('availability', 'available')} 
-                  className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                />
-                <label htmlFor="available" className="ml-3 block text-sm font-medium text-gray-700">Available</label>
-              </div>
-              
-              <div className="flex items-center">
-                <input 
-                  type="radio" 
-                  id="not-available" 
-                  name="availability"
-                  checked={formData.availability === 'not-available'} 
-                  onChange={() => handleRadioChange('availability', 'not-available')} 
-                  className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                />
-                <label htmlFor="not-available" className="ml-3 block text-sm font-medium text-gray-700">Not available</label>
-              </div>
-              
-              {formData.availability === 'not-available' && (
-                <div className="ml-7">
-                  <input 
-                    type="date" 
-                    name="availableFrom"
-                    value={formData.availableFrom}
-                    onChange={handleChange}
-                    placeholder="Available from" 
-                    className={`mt-1 block w-full border rounded-md shadow-sm sm:text-sm p-2 ${errors.availableFrom ? 'border-red-500' : 'border-gray-300'}`}
-                  />
-                  {errors.availableFrom && <p className="mt-1 text-sm text-red-600">{errors.availableFrom}</p>}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Item's Condition */}
-          <div>
-            <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-1">
-              Item's condition
-            </label>
-            <select 
-              id="condition" 
-              name="condition"
-              value={formData.condition}
-              onChange={handleChange}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
+        <motion.form
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 20, opacity: 0 }}
+          transition={{ type: "spring", damping: 25 }}
+          onSubmit={handleSubmit}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col"
+        >
+          {/* Header */}
+          <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
+            <h2 className="text-2xl font-bold text-gray-800">
+              {item ? 'Edit Item' : 'Add New Item'}
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-800 transition-colors p-1 rounded-full hover:bg-gray-100"
+              aria-label="Close form"
             >
-              <option>Completely new</option>
-              <option>Fresh</option>
-              <option>Used 1 time</option>
-              <option>Used 2 times</option>
-              <option>Used 3 times</option>
-              <option>Used too much</option>
-              <option>Old</option>
-              <option>Bad</option>
-            </select>
+              <IoMdClose size={24} />
+            </button>
           </div>
-          
-          {/* Rent Price */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rent price</label>
-            <div className="mt-2 space-y-2">
-              <div className="flex items-center">
-                <input 
-                  type="radio" 
-                  id="fixed-price" 
-                  name="rentOption"
-                  checked={formData.rentOption === 'fixed'} 
-                  onChange={() => handleRadioChange('rentOption', 'fixed')} 
-                  className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+
+          {/* Form Content */}
+          <div className="overflow-y-auto p-6 flex-grow">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column */}
+              <div>
+                <InputField label="Name" name="name" required formData={formData} errors={errors} handleChange={handleChange} />
+                <InputField label="Category" name="category" required formData={formData} errors={errors} handleChange={handleChange} />
+                
+                <RadioGroup
+                  label="Size"
+                  name="sizeOption"
+                  options={[
+                    { value: 'fixed', label: 'Fixed size' },
+                    { value: 'range', label: 'Size range' },
+                    { value: 'free', label: 'Free size' }
+                  ]}
+                  formData={formData}
+                  handleRadioChange={handleRadioChange}
                 />
-                <label htmlFor="fixed-price" className="ml-3 block text-sm font-medium text-gray-700">Fixed price</label>
+                
+                {formData.sizeOption === 'fixed' && (
+                  <InputField label="Size Value" name="sizeValue" required formData={formData} errors={errors} handleChange={handleChange} />
+                )}
+                
+                {formData.sizeOption === 'range' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <InputField label="From" name="sizeFrom" required formData={formData} errors={errors} handleChange={handleChange} />
+                    <InputField label="To" name="sizeTo" required formData={formData} errors={errors} handleChange={handleChange} />
+                  </div>
+                )}
+                
+                <InputField label="Length (optional)" name="long" formData={formData} errors={errors} handleChange={handleChange} />
+                <InputField label="Colors" name="colors" formData={formData} errors={errors} handleChange={handleChange} />
               </div>
+
+              {/* Right Column */}
+              <div>
+                <InputField label="Purchase Date" name="purchaseDate" type="date" formData={formData} errors={errors} handleChange={handleChange} />
+                <InputField label="Purchased From" name="purchaseFrom" formData={formData} errors={errors} handleChange={handleChange} />
+                <InputField label="Item's Country" name="itemCountry" formData={formData} errors={errors} handleChange={handleChange} />
+                <InputField 
+                  label="Purchase Price" 
+                  name="purchasePrice" 
+                  type="number" 
+                  required 
+                  min="0" 
+                  step="0.01" 
+                  formData={formData} errors={errors} handleChange={handleChange}
+                />
+                
+                <RadioGroup
+                  label="Availability"
+                  name="availability"
+                  options={[
+                    { value: 'available', label: 'Available' },
+                    { value: 'not-available', label: 'Not available' }
+                  ]}
+                  formData={formData}
+                  handleRadioChange={handleRadioChange}
+                />
+                
+                {formData.availability === 'not-available' && (
+                  <InputField 
+                    label="Available From" 
+                    name="availableFrom" 
+                    type="date" 
+                    required={formData.availability === 'not-available'}
+                    formData={formData} errors={errors} handleChange={handleChange}
+                  />
+                )}
+                
+                <div className="mb-4">
+                  <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-1">
+                    Item's Condition
+                  </label>
+                  <select
+                    id="condition"
+                    name="condition"
+                    value={formData.condition}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  >
+                    <option>Completely new</option>
+                    <option>Fresh</option>
+                    <option>Used 1 time</option>
+                    <option>Used 2 times</option>
+                    <option>Used 3 times</option>
+                    <option>Used too much</option>
+                    <option>Old</option>
+                    <option>Bad</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Rent Price Section */}
+            <div className="mt-6 border-t pt-6">
+              <RadioGroup
+                label="Rent Price"
+                name="rentOption"
+                options={[
+                  { value: 'fixed', label: 'Fixed price' },
+                  { value: 'per-day', label: 'Price per day' },
+                  { value: 'range', label: 'Price range' }
+                ]}
+                formData={formData}
+                handleRadioChange={handleRadioChange}
+              />
               
               {formData.rentOption === 'fixed' && (
-                <div className="ml-7">
-                  <input 
-                    type="number" 
-                    name="rentValue"
-                    value={formData.rentValue}
-                    onChange={handleChange}
-                    placeholder="Enter price" 
-                    min="0"
-                    step="0.01"
-                    className={`mt-1 block w-full border rounded-md shadow-sm sm:text-sm p-2 ${errors.rentValue ? 'border-red-500' : 'border-gray-300'}`}
-                  />
-                  {errors.rentValue && <p className="mt-1 text-sm text-red-600">{errors.rentValue}</p>}
-                </div>
-              )}
-              
-              <div className="flex items-center">
-                <input 
-                  type="radio" 
-                  id="per-day-price" 
-                  name="rentOption"
-                  checked={formData.rentOption === 'per-day'} 
-                  onChange={() => handleRadioChange('rentOption', 'per-day')} 
-                  className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                <InputField
+                  label="Rent Price"
+                  name="rentValue"
+                  type="number"
+                  required
+                  min="0"
+                  step="0.01"
+                  formData={formData} errors={errors} handleChange={handleChange}
                 />
-                <label htmlFor="per-day-price" className="ml-3 block text-sm font-medium text-gray-700">Price per day</label>
-              </div>
+              )}
               
               {formData.rentOption === 'per-day' && (
-                <div className="ml-7">
-                  <input 
-                    type="number" 
-                    name="rentPerDay"
-                    value={formData.rentPerDay}
-                    onChange={handleChange}
-                    placeholder="Enter price per day" 
-                    min="0"
-                    step="0.01"
-                    className={`mt-1 block w-full border rounded-md shadow-sm sm:text-sm p-2 ${errors.rentPerDay ? 'border-red-500' : 'border-gray-300'}`}
-                  />
-                  {errors.rentPerDay && <p className="mt-1 text-sm text-red-600">{errors.rentPerDay}</p>}
-                </div>
-              )}
-              
-              <div className="flex items-center">
-                <input 
-                  type="radio" 
-                  id="price-range" 
-                  name="rentOption"
-                  checked={formData.rentOption === 'range'} 
-                  onChange={() => handleRadioChange('rentOption', 'range')} 
-                  className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                <InputField
+                  label="Price Per Day"
+                  name="rentPerDay"
+                  type="number"
+                  required
+                  min="0"
+                  step="0.01"
+                  formData={formData} errors={errors} handleChange={handleChange}
                 />
-                <label htmlFor="price-range" className="ml-3 block text-sm font-medium text-gray-700">Price range</label>
-              </div>
+              )}
               
               {formData.rentOption === 'range' && (
-                <div className="ml-7 mt-1">
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <input 
-                        type="number" 
-                        name="rentFrom"
-                        value={formData.rentFrom}
-                        onChange={handleChange}
-                        placeholder="From" 
-                        min="0"
-                        step="0.01"
-                        className={`block w-full border rounded-md shadow-sm sm:text-sm p-2 ${errors.rentFrom ? 'border-red-500' : 'border-gray-300'}`}
-                      />
-                      {errors.rentFrom && <p className="mt-1 text-sm text-red-600">{errors.rentFrom}</p>}
-                    </div>
-                    <div className="flex-1">
-                      <input 
-                        type="number" 
-                        name="rentTo"
-                        value={formData.rentTo}
-                        onChange={handleChange}
-                        placeholder="To" 
-                        min="0"
-                        step="0.01"
-                        className={`block w-full border rounded-md shadow-sm sm:text-sm p-2 ${errors.rentTo ? 'border-red-500' : 'border-gray-300'}`}
-                      />
-                      {errors.rentTo && <p className="mt-1 text-sm text-red-600">{errors.rentTo}</p>}
-                    </div>
-                  </div>
-                  {errors.rentRange && <p className="mt-1 text-sm text-red-600">{errors.rentRange}</p>}
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="From" name="rentFrom" type="number" required min="0" step="0.01" formData={formData} errors={errors} handleChange={handleChange} />
+                  <InputField label="To" name="rentTo" type="number" required min="0" step="0.01" formData={formData} errors={errors} handleChange={handleChange} />
                 </div>
               )}
             </div>
-          </div>
-          
-          {/* Target */}
-          <div>
-            <label htmlFor="target" className="block text-sm font-medium text-gray-700 mb-1">
-              Target <span className="text-red-500">*</span>
-            </label>
-            <p className="text-sm text-gray-500 mb-1">How many times the item must be rented to get back the original purchase price.</p>
-            <input 
-              type="number" 
-              id="target" 
+
+            {/* Target */}
+            <InputField
+              label="Target"
               name="target"
-              value={formData.target}
-              onChange={handleChange}
+              type="number"
+              required
               min="1"
               step="1"
-              className={`mt-1 block w-full border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 ${errors.target ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.target && <p className="mt-1 text-sm text-red-600">{errors.target}</p>}
-          </div>
-          
-          {/* Item Photo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Item photo</label>
-            <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md ${errors.photo ? 'border-red-500' : 'border-gray-300'}`}>
-              <div className="space-y-1 text-center">
+              formData={formData} errors={errors} handleChange={handleChange}
+            >
+              <div>
+                <input
+                  type="number"
+                  id="target"
+                  name="target"
+                  value={formData.target}
+                  onChange={handleChange}
+                  min="1"
+                  step="1"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                    errors.target ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  How many times the item must be rented to get back the original purchase price.
+                </p>
+                {errors.target && <p className="mt-1 text-sm text-red-600">{errors.target}</p>}
+              </div>
+            </InputField>
+
+            {/* Item Photo */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Item Photo</label>
+              <div
+                className={`mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md ${
+                  errors.photo ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
                 {isUploading ? (
-                  <p>Uploading...</p>
+                  <div className="flex flex-col items-center">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-2"></div>
+                    <p className="text-sm text-gray-600">Uploading...</p>
+                  </div>
                 ) : imageUrl ? (
-                  <img src={imageUrl} alt="Uploaded" style={{ width: "300px" }} />
-                ) : (
-                  <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-                <div className="flex text-sm text-gray-600">
-                  <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                    <span>Upload a file</span>
-                    <input 
-                      id="file-upload" 
-                      name="file-upload" 
-                      type="file" 
-                      className="sr-only" 
-                      onChange={handleFileChange}
-                      accept="image/jpeg,image/png,image/gif"
+                  <div className="relative group">
+                    <img
+                      src={imageUrl}
+                      alt="Uploaded preview"
+                      className="h-40 object-contain rounded-md"
                     />
-                  </label>
-                  <p className="pl-1">or drag and drop</p>
-                </div>
-                <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                {errors.photo && <p className="text-xs text-red-600 mt-1">{errors.photo}</p>}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <FiUploadCloud className="text-white text-2xl" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <FiUploadCloud className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="flex text-sm text-gray-600 mt-3">
+                      <label
+                        htmlFor="file-upload"
+                        className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                      >
+                        <span>Upload a file</span>
+                        <input
+                          id="file-upload"
+                          name="file-upload"
+                          type="file"
+                          className="sr-only"
+                          onChange={handleFileChange}
+                          accept="image/jpeg,image/png,image/gif"
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 10MB</p>
+                  </div>
+                )}
+                {errors.photo && <p className="mt-2 text-sm text-red-600">{errors.photo}</p>}
               </div>
             </div>
-          </div>
-          
-          {/* Description */}
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea 
-              id="description" 
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows="4" 
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
-            ></textarea>
-          </div>
-        </div>
 
-        {/* Footer */}
-        <div className="flex justify-end space-x-4 p-6 border-t border-gray-200">
-          <button 
-            type="button" 
-            onClick={onClose} 
-            className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
-          >
-            Cancel
-          </button>
-          <button 
-            type="submit" 
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
-            disabled={isUploading}
-          >
-            {isUploading ? 'Uploading...' : 'Save Item'}
-          </button>
-        </div>
-      </form>
-    </div>
+            {/* Description */}
+            <div className="mt-6">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Add any additional details about the item..."
+              ></textarea>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 sticky bottom-0 bg-white">
+            <motion.button
+              type="button"
+              onClick={onClose}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              type="submit"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={isUploading || isSubmitting}
+              className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isUploading ? 'Uploading...' : isSubmitting ? 'Saving...' : 'Save Item'}
+            </motion.button>
+          </div>
+        </motion.form>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 

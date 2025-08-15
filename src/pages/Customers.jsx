@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../layout/Sidebar";
 import AddCustomerPopup from "../modals/AddCustomerPopup";
 import CustomerCard from "../cards/CustomerCard";
 import CustomerInformationPopup from "../modals/CustomerInformationPopup";
+import CustomerHistoryPopup from "../modals/CustomerHistoryPopup";
 import { useSelector } from "react-redux";
 import { getDatabase, ref, onValue, remove } from "firebase/database";
 
 const Customers = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
+  const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customers, setCustomers] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [stockItems, setStockItems] = useState([]);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
@@ -30,8 +34,55 @@ const Customers = () => {
           setCustomers([]);
         }
       });
+
+      const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
+      onValue(bookingsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const bookingsList = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }));
+          setBookings(bookingsList);
+        } else {
+          setBookings([]);
+        }
+      });
+
+      const itemsRef = ref(db, `users/${userInfo.uid}/items`);
+      onValue(itemsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const itemsList = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }));
+          setStockItems(itemsList);
+        } else {
+          setStockItems([]);
+        }
+      });
     }
   }, [db, userInfo]);
+
+  const customerStats = useMemo(() => {
+    return customers.map(customer => {
+      const customerBookings = bookings.filter(b => b.customerId === customer.id);
+      const totalSpent = customerBookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0);
+      const totalBookings = customerBookings.length;
+      const activeBookings = customerBookings.filter(b => b.status === 'Upcoming' || b.status === 'Ongoing').length;
+      const totalOutstanding = customerBookings.reduce((acc, b) => acc + (b.dueAmount > 0 ? b.dueAmount : 0), 0);
+
+      return {
+        ...customer,
+        totalSpent,
+        totalBookings,
+        activeBookings,
+        totalOutstanding,
+        bookings: customerBookings
+      };
+    });
+  }, [customers, bookings]);
 
   const handleOpenAddModal = () => {
     setEditingCustomer(null);
@@ -46,6 +97,15 @@ const Customers = () => {
   const handleCloseInfoModal = () => {
     setSelectedCustomer(null);
     setInfoModalOpen(false);
+  };
+
+  const handleOpenHistoryModal = (customer) => {
+    setSelectedCustomer(customer);
+    setHistoryModalOpen(true);
+  };
+  const handleCloseHistoryModal = () => {
+    setSelectedCustomer(null);
+    setHistoryModalOpen(false);
   };
 
   const handleEditCustomer = (customer) => {
@@ -85,12 +145,13 @@ const Customers = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {customers.map((customer) => (
+          {customerStats.map((customer) => (
             <div key={customer.id} onClick={() => handleOpenInfoModal(customer)} className="cursor-pointer">
               <CustomerCard 
                 customer={customer} 
                 onEdit={(e) => { e.stopPropagation(); handleEditCustomer(customer); }} 
                 onDelete={(e) => { e.stopPropagation(); handleDeleteCustomer(customer); }} 
+                onHistoryClick={(e) => { e.stopPropagation(); handleOpenHistoryModal(customer); }}
               />
             </div>
           ))}
@@ -98,6 +159,7 @@ const Customers = () => {
       </div>
       {isAddModalOpen && <AddCustomerPopup onClose={handleCloseAddModal} customer={editingCustomer} />}
       {isInfoModalOpen && <CustomerInformationPopup customer={selectedCustomer} onClose={handleCloseInfoModal} />}
+      {isHistoryModalOpen && <CustomerHistoryPopup customer={selectedCustomer} bookings={selectedCustomer.bookings} stockItems={stockItems} onClose={handleCloseHistoryModal} />}
     </Sidebar>
   );
 };

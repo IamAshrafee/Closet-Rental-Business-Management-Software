@@ -5,70 +5,75 @@ import UpcomingReturnsCard from '../cards/UpcomingReturnsCard';
 import DeliveryInformationPopup from '../modals/DeliveryInformationPopup';
 import { useSelector } from 'react-redux';
 import { getDatabase, ref, onValue } from 'firebase/database';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiClock, FiTruck, FiRepeat } from 'react-icons/fi';
 
 const Reminders = () => {
   const [bookings, setBookings] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [stockItems, setStockItems] = useState([]);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
+  const [activeTab, setActiveTab] = useState('deliveries');
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
-    if (userInfo) {
-      const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
-      onValue(bookingsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const bookingsList = Object.keys(data).map((key) => ({
-            id: key,
-            ...data[key],
-          }));
-          setBookings(bookingsList);
-        } else {
-          setBookings([]);
-        }
-      });
+    if (!userInfo) return;
 
-      const customersRef = ref(db, `users/${userInfo.uid}/customers`);
-      onValue(customersRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const customersList = Object.keys(data).map((key) => ({
-            id: key,
-            ...data[key],
-          }));
-          setCustomers(customersList);
-        } else {
-          setCustomers([]);
-        }
-      });
+    const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
+    const customersRef = ref(db, `users/${userInfo.uid}/customers`);
+    const itemsRef = ref(db, `users/${userInfo.uid}/items`);
 
-      const itemsRef = ref(db, `users/${userInfo.uid}/items`);
-      onValue(itemsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const itemsList = Object.keys(data).map((key) => ({
-            id: key,
-            ...data[key],
-          }));
-          setStockItems(itemsList);
-        } else {
-          setStockItems([]);
-        }
-      });
-    }
+    const unsubscribeBookings = onValue(bookingsRef, (snapshot) => {
+      const data = snapshot.val();
+      setBookings(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
+    });
+
+    const unsubscribeCustomers = onValue(customersRef, (snapshot) => {
+      const data = snapshot.val();
+      setCustomers(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
+    });
+
+    const unsubscribeItems = onValue(itemsRef, (snapshot) => {
+      const data = snapshot.val();
+      setStockItems(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
+    });
+
+    return () => {
+      unsubscribeBookings();
+      unsubscribeCustomers();
+      unsubscribeItems();
+    };
   }, [db, userInfo]);
 
   const deliveries = useMemo(() => {
-    return bookings.map(booking => {
-      const customer = customers.find(c => c.id === booking.customerId);
-      return {
-        ...booking,
-        customerName: customer ? customer.name : 'N/A',
-        customerPhone: customer ? customer.phone : 'N/A',
-      };
-    });
+    return bookings
+      .filter(b => b.status === 'Waiting for Delivery')
+      .map(booking => {
+        const customer = customers.find(c => c.id === booking.customerId);
+        return {
+          ...booking,
+          customerName: customer?.name || 'Unknown Customer',
+          customerPhone: customer?.phone || 'N/A',
+          customerAddress: customer?.address || 'N/A'
+        };
+      })
+      .sort((a, b) => new Date(a.deliveryDate) - new Date(b.deliveryDate));
+  }, [bookings, customers]);
+
+  const returns = useMemo(() => {
+    return bookings
+      .filter(b => b.status === 'Waiting for Return')
+      .map(booking => {
+        const customer = customers.find(c => c.id === booking.customerId);
+        return {
+          ...booking,
+          customerName: customer?.name || 'Unknown Customer',
+          customerPhone: customer?.phone || 'N/A',
+          customerAddress: customer?.address || 'N/A'
+        };
+      })
+      .sort((a, b) => new Date(a.returnDate) - new Date(b.returnDate));
   }, [bookings, customers]);
 
   const handleDeliveryClick = (booking) => {
@@ -83,21 +88,82 @@ const Reminders = () => {
     setSelectedDelivery(null);
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const options = { weekday: 'short', day: 'numeric', month: 'short' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
   return (
     <Sidebar>
-      <div className="flex flex-col">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold font-poppins">Reminders</h1>
-          <p className="font-poppins text-gray-500 mt-2">
-            Upcoming reminders for your rental business
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+              <FiClock size={24} />
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Reminders</h1>
+          </div>
+          <p className="text-gray-500 text-sm md:text-base">
+            Track upcoming deliveries and returns
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <UpcomingDeliveriesCard bookings={deliveries.filter(b => b.status === 'Waiting for Delivery')} onDeliveryClick={handleDeliveryClick} />
-          <UpcomingReturnsCard bookings={deliveries.filter(b => b.status === 'Waiting for Return')} onReturnClick={handleReturnClick} />
+
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            className={`px-4 py-2 font-medium text-sm flex items-center ${activeTab === 'deliveries' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('deliveries')}
+          >
+            <FiTruck className="mr-2" size={16} />
+            Deliveries ({deliveries.length})
+          </button>
+          <button
+            className={`px-4 py-2 font-medium text-sm flex items-center ${activeTab === 'returns' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('returns')}
+          >
+            <FiRepeat className="mr-2" size={16} />
+            Returns ({returns.length})
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-grow overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: activeTab === 'deliveries' ? -20 : 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: activeTab === 'deliveries' ? -20 : 20 }}
+              transition={{ duration: 0.2 }}
+              className="h-full"
+            >
+              {activeTab === 'deliveries' ? (
+                <UpcomingDeliveriesCard 
+                  bookings={deliveries} 
+                  onDeliveryClick={handleDeliveryClick} 
+                  formatDate={formatDate}
+                />
+              ) : (
+                <UpcomingReturnsCard 
+                  bookings={returns} 
+                  onReturnClick={handleReturnClick}
+                  formatDate={formatDate}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
-      {selectedDelivery && <DeliveryInformationPopup booking={selectedDelivery} stockItems={stockItems} onClose={handleClosePopup} />}
+
+      {/* Popup */}
+      <DeliveryInformationPopup 
+        isOpen={!!selectedDelivery}
+        booking={selectedDelivery} 
+        stockItems={stockItems} 
+        onClose={handleClosePopup} 
+      />
     </Sidebar>
   );
 };

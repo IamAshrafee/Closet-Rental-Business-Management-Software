@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Sidebar from '../layout/Sidebar';
 import UpcomingDeliveriesCard from '../cards/UpcomingDeliveriesCard';
+import UpcomingReturnsCard from '../cards/UpcomingReturnsCard';
 import DeliveryInformationPopup from '../modals/DeliveryInformationPopup';
 import { useSelector } from 'react-redux';
 import { getDatabase, ref, onValue } from 'firebase/database';
@@ -74,6 +75,10 @@ const Reminders = () => {
     setSelectedDelivery(booking);
   };
 
+  const handleReturnClick = (booking) => {
+    setSelectedDelivery(booking);
+  };
+
   const handleClosePopup = () => {
     setSelectedDelivery(null);
   };
@@ -87,7 +92,10 @@ const Reminders = () => {
             Upcoming reminders for your rental business
           </p>
         </div>
-        <UpcomingDeliveriesCard bookings={deliveries} onDeliveryClick={handleDeliveryClick} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <UpcomingDeliveriesCard bookings={deliveries} onDeliveryClick={handleDeliveryClick} />
+          <UpcomingReturnsCard bookings={deliveries} onReturnClick={handleReturnClick} />
+        </div>
       </div>
       {selectedDelivery && <DeliveryInformationPopup booking={selectedDelivery} stockItems={stockItems} onClose={handleClosePopup} />}
     </Sidebar>

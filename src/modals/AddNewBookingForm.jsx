@@ -20,7 +20,7 @@ const FormSection = ({ title, icon, children, required = false }) => (
 const InputField = ({ label, error, required, icon, ...props }) => (
   <div>
     {label && (
-      <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center">
+      <label className=" text-xs font-medium text-gray-600 mb-1 flex items-center">
         {icon && <span className="mr-1">{icon}</span>}
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
@@ -39,7 +39,7 @@ const InputField = ({ label, error, required, icon, ...props }) => (
 const SelectField = ({ label, error, required, icon, children, ...props }) => (
   <div>
     {label && (
-      <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center">
+      <label className=" text-xs font-medium text-gray-600 mb-1 flex items-center">
         {icon && <span className="mr-1">{icon}</span>}
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
@@ -63,7 +63,7 @@ const SelectField = ({ label, error, required, icon, children, ...props }) => (
 const TextareaField = ({ label, error, required, icon, ...props }) => (
   <div>
     {label && (
-      <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center">
+      <label className=" text-xs font-medium text-gray-600 mb-1 flex items-center">
         {icon && <span className="mr-1">{icon}</span>}
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
@@ -96,7 +96,7 @@ const Alert = ({ type, message, onClose }) => (
   </motion.div>
 );
 
-const AddNewBookingForm = ({ onClose, booking }) => {
+const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   const [bookingDetails, setBookingDetails] = useState({
     customerId: '',
     items: [],
@@ -402,6 +402,8 @@ const AddNewBookingForm = ({ onClose, booking }) => {
     customers.find(c => c.id === bookingDetails.customerId), 
     [bookingDetails.customerId, customers]
   );
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center backdrop-blur-sm z-50 p-4" onClick={onClose}>

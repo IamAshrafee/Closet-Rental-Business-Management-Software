@@ -1,152 +1,270 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiUser, FiPhone, FiCalendar, FiTruck, FiRepeat, FiDollarSign, FiFileText, FiAlertCircle, FiEye, FiEdit, FiTrash2, FiCheckCircle, FiClock, FiChevronDown } from 'react-icons/fi';
+import { 
+  FiUser, 
+  FiPhone, 
+  FiCalendar, 
+  FiTruck, 
+  FiRepeat, 
+  FiDollarSign,
+  FiAlertCircle, 
+  FiEye, 
+  FiEdit, 
+  FiTrash2,
+  FiChevronDown,
+  FiClock,
+  FiCheckCircle
+} from 'react-icons/fi';
 import { getDatabase, ref, onValue } from 'firebase/database';
 import { useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
 
-const InfoLine = ({ icon, label, value, className = '' }) => (
-    <div className={`flex items-center text-sm text-gray-600 ${className}`}>
-        <div className="flex-shrink-0 w-5 text-gray-400">{icon}</div>
-        <span className="ml-2 font-medium text-gray-500">{label}:</span>
-        <span className="ml-2 text-gray-800">{value}</span>
+const InfoLine = ({ icon, label, value, className = '', iconClass = '' }) => (
+  <div className={`flex items-center text-sm ${className}`}>
+    <div className={`flex-shrink-0 w-5 ${iconClass || 'text-gray-400'}`}>
+      {icon}
     </div>
+    <span className="ml-2 font-medium text-gray-500">{label}:</span>
+    <span className="ml-2 text-gray-800 truncate">{value}</span>
+  </div>
 );
 
 const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => {
-    const [customer, setCustomer] = useState(null);
-    const db = getDatabase();
-    const userInfo = useSelector((state) => state.userLogInfo.value);
+  const [customer, setCustomer] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const db = getDatabase();
+  const userInfo = useSelector((state) => state.userLogInfo.value);
 
-    useEffect(() => {
-        if (userInfo && booking && booking.customerId) {
-            const customerRef = ref(db, `users/${userInfo.uid}/customers/${booking.customerId}`);
-            onValue(customerRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    setCustomer(data);
-                }
-            });
-        }
-    }, [db, userInfo, booking]);
-
-    const { deliveryDate, returnDate, startDate, endDate, notes, items, advances, deliveryCharge, otherCharges, status } = booking;
-
-    const totalRent = useMemo(() => 
-        items.reduce((total, item) => total + (item.calculatedPrice || 0), 0), 
-        [items]
-    );
-
-    const totalAdvance = useMemo(() => 
-        advances.reduce((total, advance) => total + (Number(advance.amount) || 0), 0), 
-        [advances]
-    );
-
-    const totalCharges = useMemo(() => 
-        (Number(deliveryCharge) || 0) + (Number(otherCharges) || 0), 
-        [deliveryCharge, otherCharges]
-    );
-
-    const totalAmount = useMemo(() => totalRent + totalCharges, [totalRent, totalCharges]);
-
-    const dueAmount = useMemo(() => totalAmount - totalAdvance, [totalAmount, totalAdvance]);
-
-    const isDue = dueAmount > 0;
-
-    const handleActionClick = (e, action) => {
-        e.stopPropagation(); // Prevent card click from firing if buttons are inside
-        action();
-    };
-
-    const getStatusColor = (currentStatus) => {
-        switch (currentStatus) {
-            case 'Waiting for Delivery': return 'bg-blue-100 text-blue-800';
-            case 'Waiting for Return': return 'bg-yellow-100 text-yellow-800';
-            case 'Completed': return 'bg-green-100 text-green-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
-
-    const handleStatusChangeClick = (e) => {
-        const newStatus = e.target.value;
-        if (newStatus && newStatus !== status) {
-            onStatusChange(booking, newStatus);
-        }
-    };
-
-    const allStatuses = ['Waiting for Delivery', 'Waiting for Return', 'Completed'];
-
-    if (!booking || !customer) {
-        return null;
+  useEffect(() => {
+    if (userInfo && booking.customerId) {
+      const customerRef = ref(db, `users/${userInfo.uid}/customers/${booking.customerId}`);
+      const unsubscribe = onValue(customerRef, (snapshot) => {
+        setCustomer(snapshot.val());
+      });
+      return () => unsubscribe();
     }
+  }, [db, userInfo, booking.customerId]);
 
-    return (
-        <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col">
-            <div className="p-5 flex-grow">
-                {/* Header */}
-                <div className="border-b pb-3 mb-4 flex justify-between items-center">
-                    <div>
-                        <h3 className="text-lg font-bold font-poppins text-gray-800">{customer.name}</h3>
-                        <p className="text-sm text-gray-500 flex items-center"><FiPhone className="mr-2" />{customer.phone}</p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(status)}`}>
-                        {status}
-                    </span>
-                </div>
+  const {
+    deliveryDate,
+    returnDate,
+    startDate,
+    endDate,
+    notes,
+    items = [],
+    advances = [],
+    deliveryCharge = 0,
+    otherCharges = 0,
+    status
+  } = booking;
 
-                {/* Dates */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 mb-4">
-                    <InfoLine icon={<FiTruck />} label="Delivery" value={deliveryDate} className="font-semibold text-blue-600" />
-                    <InfoLine icon={<FiRepeat />} label="Return" value={returnDate} className="font-semibold text-red-600" />
-                    <InfoLine icon={<FiCalendar />} label="Rent Start" value={startDate} />
-                    <InfoLine icon={<FiCalendar />} label="Rent End" value={endDate} />
-                </div>
+  const totalRent = useMemo(() => 
+    items.reduce((total, item) => total + (item.calculatedPrice || 0), 0), 
+    [items]
+  );
 
-                {/* Financials */}
-                <div className="bg-gray-50 p-3 rounded-md mb-4">
-                    <div className="flex justify-between items-center text-sm">
-                        <InfoLine icon={<FiDollarSign />} label="Total" value={`₹${totalAmount.toFixed(2)}`} />
-                        {isDue && (
-                            <div className="flex items-center text-red-600 font-semibold">
-                                <FiAlertCircle className="mr-1" />
-                                <span>Due: ₹{dueAmount.toFixed(2)}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
+  const totalAdvance = useMemo(() => 
+    advances.reduce((total, advance) => total + (Number(advance.amount) || 0), 0), 
+    [advances]
+  );
 
-                {/* Notes */}
-                {notes && (
-                    <div>
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">Notes</h4>
-                        <p className="text-sm text-gray-700 bg-yellow-50 border border-yellow-200 p-2 rounded-md">{notes}</p>
-                    </div>
-                )}
-            </div>
-            
-            {/* Actions */}
-            <div className="flex justify-end items-center p-3 bg-gray-50 border-t">
-                <button onClick={(e) => handleActionClick(e, onView)} className="flex items-center text-sm font-semibold text-indigo-600 hover:text-indigo-800 px-3 py-1 rounded-md hover:bg-indigo-100 transition-colors">
-                    <FiEye className="mr-1.5" /> View Info
-                </button>
-                <div className="w-px h-5 bg-gray-300 mx-2"></div>
-                
-                <div className="relative inline-block text-left">
-                    <select
-                        onChange={handleStatusChangeClick}
-                        value={status}
-                        className="appearance-none bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-8 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                        {allStatuses.map(s => (
-                            <option key={s} value={s}>{s}</option>
-                        ))}
-                    </select>
-                    <FiChevronDown className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400" />
-                </div>
+  const totalCharges = useMemo(() => 
+    (Number(deliveryCharge) || 0) + (Number(otherCharges) || 0), 
+    [deliveryCharge, otherCharges]
+  );
 
-                <button onClick={(e) => handleActionClick(e, onEdit)} className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-100 transition-colors"><FiEdit /></button>
-                <button onClick={(e) => handleActionClick(e, onDelete)} className="p-2 text-gray-500 hover:text-red-600 rounded-full hover:bg-red-100 transition-colors"><FiTrash2 /></button>
-            </div>
+  const totalAmount = useMemo(() => totalRent + totalCharges, [totalRent, totalCharges]);
+  const dueAmount = useMemo(() => totalAmount - totalAdvance, [totalAmount, totalAdvance]);
+  const isDue = dueAmount > 0;
+
+  const getStatusColor = (currentStatus) => {
+    switch (currentStatus) {
+      case 'Waiting for Delivery': return 'bg-blue-100 text-blue-800';
+      case 'Waiting for Return': return 'bg-yellow-100 text-yellow-800';
+      case 'Completed': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const options = { day: 'numeric', month: 'short' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  const handleStatusChange = (e) => {
+    const newStatus = e.target.value;
+    if (newStatus && newStatus !== status) {
+      onStatusChange(booking, newStatus);
+    }
+  };
+
+  const statusOptions = ['Waiting for Delivery', 'Waiting for Return', 'Completed'];
+
+  if (!customer) return null;
+
+  return (
+    <motion.div 
+      className="bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-200 overflow-hidden"
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
+    >
+      <div 
+        className="p-5 cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">{customer.name}</h3>
+            <p className="text-sm text-gray-500 flex items-center">
+              <FiPhone className="mr-1.5" size={14} />
+              {customer.phone}
+            </p>
+          </div>
+          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(status)}`}>
+            {status}
+          </span>
         </div>
-    );
+
+        {/* Quick Info */}
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <InfoLine 
+            icon={<FiTruck size={14} />} 
+            label="Delivery" 
+            value={formatDate(deliveryDate)} 
+            iconClass="text-blue-500" 
+          />
+          <InfoLine 
+            icon={<FiRepeat size={14} />} 
+            label="Return" 
+            value={formatDate(returnDate)} 
+            iconClass="text-red-500" 
+          />
+        </div>
+
+        {/* Financial Summary */}
+        <div className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg">
+          <div className="flex items-center">
+            <FiDollarSign className="text-gray-500 mr-2" size={14} />
+            <span className="font-medium">₹{totalAmount.toFixed(2)}</span>
+          </div>
+          {isDue && (
+            <div className="flex items-center text-red-600 text-sm font-medium">
+              <FiAlertCircle className="mr-1" size={14} />
+              <span>₹{dueAmount.toFixed(2)} due</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Expanded Details */}
+      {isExpanded && (
+        <motion.div 
+          className="px-5 pb-5"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="border-t border-gray-200 pt-4 mb-4">
+            {/* Detailed Dates */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">Rent Period</h4>
+                <div className="space-y-1">
+                  <InfoLine icon={<FiCalendar size={14} />} label="Start" value={formatDate(startDate)} />
+                  <InfoLine icon={<FiCalendar size={14} />} label="End" value={formatDate(endDate)} />
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">Logistics</h4>
+                <div className="space-y-1">
+                  <InfoLine icon={<FiTruck size={14} />} label="Delivery" value={formatDate(deliveryDate)} />
+                  <InfoLine icon={<FiRepeat size={14} />} label="Return" value={formatDate(returnDate)} />
+                </div>
+              </div>
+            </div>
+
+            {/* Notes */}
+            {notes && (
+              <div className="mb-4">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">Notes</h4>
+                <p className="text-sm text-gray-700 bg-yellow-50 border border-yellow-100 p-2 rounded-md">
+                  {notes}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
+            <div className="relative w-full sm:w-auto">
+              <select
+                onChange={handleStatusChange}
+                value={status}
+                className="appearance-none w-full bg-white border border-gray-300 rounded-lg shadow-sm pl-3 pr-8 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                {statusOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            </div>
+
+            <div className="flex space-x-2 w-full sm:w-auto">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onView();
+                }}
+                className="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <FiEye className="mr-1.5" size={14} />
+                View
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                className="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-blue-600 bg-white hover:bg-blue-50"
+              >
+                <FiEdit className="mr-1.5" size={14} />
+                Edit
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-red-600 bg-white hover:bg-red-50"
+              >
+                <FiTrash2 className="mr-1.5" size={14} />
+                Delete
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Footer - Quick Actions */}
+      <div className="border-t border-gray-200 px-5 py-3 bg-gray-50">
+        <div className="flex justify-between items-center">
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+          >
+            {isExpanded ? 'Show less' : 'Show details'}
+          </button>
+          <div className="flex items-center space-x-2">
+            <span className={`text-xs font-medium px-2 py-1 rounded-full ${isDue ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+              {isDue ? 'Payment Due' : 'Paid'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
 };
 
 export default BookingsCard;

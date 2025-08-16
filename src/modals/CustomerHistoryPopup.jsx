@@ -135,7 +135,7 @@ const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = []
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0  bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4"
+        className="fixed inset-0  bg-opacity-50 bg-black/30 flex justify-center items-center backdrop-blur-sm z-50 p-4"
         onClick={onClose}
       >
         <motion.div 

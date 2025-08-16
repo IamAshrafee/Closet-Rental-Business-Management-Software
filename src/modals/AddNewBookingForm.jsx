@@ -4,6 +4,7 @@ import { FiPlus, FiTrash2, FiUser, FiBox, FiCalendar, FiDollarSign, FiFileText, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDatabase, ref, onValue, push, set, update, get } from 'firebase/database';
 import { useSelector } from 'react-redux';
+import Select from 'react-select';
 
 // Reusable UI Components
 const FormSection = ({ title, icon, children, required = false }) => (
@@ -118,8 +119,14 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   const [submitting, setSubmitting] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [stockItems, setStockItems] = useState([]);
+  const [allBookings, setAllBookings] = useState([]);
+  const [colorFilter, setColorFilter] = useState(null);
+  const [categoryFilter, setCategoryFilter] = useState(null);
+  const [showAvailableOnly, setShowAvailableOnly] = useState(true);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
+  const colors = useSelector((state) => state.color.value);
+  const categories = useSelector((state) => state.category.value);
 
   useEffect(() => {
     if (isOpen) {
@@ -160,8 +167,65 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
           setStockItems([]);
         }
       });
+
+      const allBookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
+      onValue(allBookingsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const bookingsList = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }));
+          setAllBookings(bookingsList);
+        } else {
+          setAllBookings([]);
+        }
+      });
     }
   }, [db, userInfo]);
+
+  const filteredStockItems = useMemo(() => {
+    const { startDate, endDate } = bookingDetails;
+    const newBookingStart = startDate ? new Date(startDate) : null;
+    const newBookingEnd = endDate ? new Date(endDate) : null;
+
+    return stockItems.filter(item => {
+      // Category and Color filters
+      if (categoryFilter && item.category !== categoryFilter.value) return false;
+      if (colorFilter && item.colors !== colorFilter.value) return false;
+
+      // Availability filter
+      if (showAvailableOnly && newBookingStart && newBookingEnd) {
+        const isBooked = allBookings.some(b => {
+          if (booking && b.id === booking.id) return false; // Ignore current booking if editing
+
+          const hasItem = b.items?.some(i => i.itemId === item.id);
+          if (!hasItem) return false;
+
+          const existingStart = new Date(b.startDate);
+          const existingEnd = new Date(b.endDate);
+
+          // Check for date range overlap
+          return newBookingStart < existingEnd && newBookingEnd > existingStart;
+        });
+
+        if (isBooked) return false;
+      }
+
+      return true;
+    });
+  }, [
+    stockItems, 
+    categoryFilter, 
+    colorFilter, 
+    showAvailableOnly, 
+    allBookings, 
+    bookingDetails.startDate, 
+    bookingDetails.endDate, 
+    booking
+  ]);
+
+  
 
   // Calculate price based on price type and dates
   const calculateItemPrice = useCallback((item) => {
@@ -198,8 +262,31 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
     }));
   };
 
-  // Handle item changes
-  const handleItemChange = (index, e) => {
+  // Handle item changes from react-select
+  const handleItemSelectChange = (index, selectedOption) => {
+    const newItems = [...bookingDetails.items];
+    const selectedItem = stockItems.find(i => i.id === selectedOption.value);
+
+    newItems[index] = {
+      ...newItems[index],
+      itemId: selectedOption.value,
+      // Optionally pre-fill price from stock item
+      price: selectedItem?.rentValue || '',
+      priceType: selectedItem?.rentOption === 'per-day' ? 'Per Day' : 'Fixed',
+    };
+
+    // Recalculate price
+    newItems[index].calculatedPrice = calculateItemPrice(newItems[index]);
+
+    setBookingDetails(prev => ({ ...prev, items: newItems }));
+
+    // Clear error
+    if (errors[`items.${index}.itemId`]) {
+      setErrors(prev => ({ ...prev, [`items.${index}.itemId`]: null }));
+    }
+  };
+
+  const handleItemDetailsChange = (index, e) => {
     const { name, value } = e.target;
     const newItems = [...bookingDetails.items];
     newItems[index] = { ...newItems[index], [name]: value };
@@ -431,10 +518,21 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
     [bookingDetails.customerId, customers]
   );
 
+  // Auto-fill address when customer changes
+  useEffect(() => {
+    if (selectedCustomer && selectedCustomer.address) {
+      setBookingDetails(prev => ({ ...prev, address: selectedCustomer.address }));
+    } else {
+      // If the new customer has no address, clear the field
+      // Optionally, you might want to only clear it if it was auto-filled
+      setBookingDetails(prev => ({ ...prev, address: '' }));
+    }
+  }, [selectedCustomer]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0  bg-opacity-60 flex justify-center items-center backdrop-blur-sm z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-gray-100 md:bg-black/50 backdrop-blur-sm  md:bg-opacity-60 md:flex md:justify-center md:items-center md:backdrop-blur-sm z-50 md:p-4" onClick={onClose}>
       <AnimatePresence>
         {alert.show && (
           <Alert 
@@ -446,11 +544,11 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
       </AnimatePresence>
       
       <form 
-        className="bg-gray-100 rounded-xl shadow-2xl w-11/12 max-w-5xl max-h-[90vh] flex flex-col" 
+        className="bg-gray-100 w-full h-full flex flex-col md:rounded-xl md:shadow-2xl md:w-11/12 md:max-w-5xl md:max-h-[90vh]" 
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
       >
-        <div className="flex justify-between items-center p-6 border-b bg-white rounded-t-xl sticky top-0 z-10">
+        <div className="flex justify-between items-center p-6 border-b bg-white md:rounded-t-xl sticky top-0 z-10">
           <h2 className="text-2xl font-bold text-gray-800">{booking ? 'Edit Booking' : 'Create New Booking'}</h2>
           <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-800 transition-colors">
             <IoMdClose size={24} />
@@ -550,7 +648,38 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
             </FormSection>
             
             <FormSection title="Rented Items" icon={<FiBox className="text-indigo-600" />} required>
-              {errors.items && <p className="text-red-500 text-sm">{errors.items}</p>}
+              {errors.items && <p className="text-red-500 text-sm mb-3">{errors.items}</p>}
+
+              <div className="p-4 border rounded-md bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <Select
+                    name="categoryFilter"
+                    options={categories.map(c => ({ value: c.name, label: c.name }))}
+                    onChange={setCategoryFilter}
+                    placeholder="Filter by category..."
+                    isClearable
+                  />
+                  <Select
+                    name="colorFilter"
+                    options={colors.map(c => ({ value: c.name, label: c.name }))}
+                    onChange={setColorFilter}
+                    placeholder="Filter by color..."
+                    isClearable
+                  />
+                </div>
+                <div className="flex items-center">
+                  <input 
+                    type="checkbox" 
+                    id="availableOnly"
+                    checked={showAvailableOnly}
+                    onChange={(e) => setShowAvailableOnly(e.target.checked)}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="availableOnly" className="ml-2 block text-sm text-gray-900">
+                    Show available items only (requires rental dates)
+                  </label>
+                </div>
+              </div>
               
               <div className="space-y-4">
                 {bookingDetails.items.map((item, index) => (
@@ -572,22 +701,43 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                       </button>
                     </div>
                     
-                    <SelectField 
-                      name="itemId" 
-                      value={item.itemId} 
-                      onChange={(e) => handleItemChange(index, e)}
-                      error={errors[`items.${index}.itemId`]}
-                      required
-                    >
-                      <option value="">Select an item</option>
-                      {stockItems.map(i => <option key={i.id} value={i.id}>{i.name} - {i.category}</option>)}
-                    </SelectField>
+                    <Select
+                      name="itemId"
+                      value={filteredStockItems.map(i => ({ value: i.id, label: i.name, photo: i.photo, category: i.category })).find(i => i.value === item.itemId)}
+                      onChange={(selectedOption) => handleItemSelectChange(index, selectedOption)}
+                      options={filteredStockItems.map(i => ({ value: i.id, label: i.name, photo: i.photo, category: i.category }))}
+                      formatOptionLabel={({ label, photo, category }) => (
+                        <div className="flex items-center">
+                          <img src={photo || 'https://via.placeholder.com/40x40?text=No+Image'} alt={label} className="w-10 h-10 object-cover rounded-md mr-3"/>
+                          <div>
+                            <div className="font-medium text-gray-800">{label}</div>
+                            <div className="text-xs text-gray-500">{category}</div>
+                          </div>
+                        </div>
+                      )}
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          border: errors[`items.${index}.itemId`] ? '1px solid #ef4444' : '1px solid #d1d5db',
+                          borderRadius: '0.375rem',
+                          padding: '2px',
+                        }),
+                        option: (provided, state) => ({
+                          ...provided,
+                          backgroundColor: state.isSelected ? '#4f46e5' : state.isFocused ? '#e0e7ff' : 'white',
+                          color: state.isSelected ? 'white' : '#1f2937',
+                        }),
+                      }}
+                      placeholder="Select an item..."
+                      isClearable
+                    />
+                    {errors[`items.${index}.itemId`] && <p className="mt-1 text-xs text-red-500">{errors[`items.${index}.itemId`]}</p>}
                                         
                     <div className="flex items-center gap-4">
                       <SelectField 
                         name="priceType" 
                         value={item.priceType} 
-                        onChange={(e) => handleItemChange(index, e)}
+                        onChange={(e) => handleItemDetailsChange(index, e)}
                         label="Price Type"
                       >
                         <option>Fixed</option>
@@ -597,7 +747,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                         type="number" 
                         name="price" 
                         value={item.price} 
-                        onChange={(e) => handleItemChange(index, e)} 
+                        onChange={(e) => handleItemDetailsChange(index, e)} 
                         placeholder={`Price (${currency.symbol})`}
                         label="Price"
                         error={errors[`items.${index}.price`]}
@@ -731,7 +881,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
           </div>
         </div>
         
-        <div className="flex justify-end space-x-4 p-6 border-t bg-white rounded-b-xl sticky bottom-0 z-10">
+        <div className="flex justify-end space-x-4 p-6 border-t bg-white md:rounded-b-xl sticky bottom-0 z-10">
           <button 
             type="button" 
             onClick={handleReset} 

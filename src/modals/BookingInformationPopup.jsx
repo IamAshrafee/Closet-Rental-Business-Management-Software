@@ -155,7 +155,7 @@ const BookingInformationPopup = ({ booking, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0  bg-opacity-50 flex justify-center items-center p-4 z-50 overflow-hidden"
+        className="fixed inset-0  bg-opacity-50 bg-black/30 flex justify-center items-center p-4 z-50 overflow-hidden"
         onClick={onClose}
         style={{
           backdropFilter: "blur(6px)",

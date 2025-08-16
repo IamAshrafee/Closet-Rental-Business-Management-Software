@@ -1,8 +1,10 @@
 import React from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiUser, FiPhone, FiMapPin, FiCalendar, FiDollarSign, FiPackage, FiInfo } from 'react-icons/fi';
+import { useSelector } from 'react-redux';
 
 const DeliveryInformationPopup = ({ booking, stockItems, onClose }) => {
+  const currency = useSelector((state) => state.currency.value);
   if (!booking) {
     return null;
   }
@@ -53,8 +55,8 @@ const DeliveryInformationPopup = ({ booking, stockItems, onClose }) => {
               <p className="flex items-center"><FiInfo className="mr-2 text-green-500" /> <strong>Booking ID:</strong> {booking.id}</p>
               <p className="flex items-center"><FiCalendar className="mr-2 text-green-500" /> <strong>Delivery Date:</strong> {booking.deliveryDate}</p>
               <p className="flex items-center"><FiCalendar className="mr-2 text-green-500" /> <strong>Return Date:</strong> {booking.returnDate}</p>
-              <p className="flex items-center"><FiDollarSign className="mr-2 text-green-500" /> <strong>Total Amount:</strong> ₹{booking.totalAmount?.toFixed(2)}</p>
-              <p className="flex items-center"><FiDollarSign className="mr-2 text-green-500" /> <strong>Due Amount:</strong> ₹{booking.dueAmount?.toFixed(2)}</p>
+              <p className="flex items-center"><FiDollarSign className="mr-2 text-green-500" /> <strong>Total Amount:</strong> {currency.symbol}{booking.totalAmount?.toFixed(2)}</p>
+              <p className="flex items-center"><FiDollarSign className="mr-2 text-green-500" /> <strong>Due Amount:</strong> {currency.symbol}{booking.dueAmount?.toFixed(2)}</p>
             </div>
           </div>
 

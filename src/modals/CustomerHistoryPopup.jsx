@@ -10,6 +10,7 @@ import {
   FiList
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSelector } from 'react-redux';
 
 const StatCard = ({ icon, label, value, color }) => (
   <motion.div 
@@ -24,7 +25,7 @@ const StatCard = ({ icon, label, value, color }) => (
   </motion.div>
 );
 
-const BookingItem = ({ booking, getItemName }) => (
+const BookingItem = ({ booking, getItemName, currency }) => (
   <motion.li 
     className="p-5 border border-gray-200 rounded-xl bg-white shadow-xs mb-4"
     initial={{ opacity: 0, y: 10 }}
@@ -55,11 +56,11 @@ const BookingItem = ({ booking, getItemName }) => (
       </div>
       <div className="flex items-center">
         <FiDollarSign className="text-gray-400 mr-2" size={14} />
-        <span><strong>Total:</strong> ₹{booking.totalAmount?.toFixed(2)}</span>
+        <span><strong>Total:</strong> {currency.symbol}{booking.totalAmount?.toFixed(2)}</span>
       </div>
       <div className="flex items-center">
         <FiAlertCircle className="text-gray-400 mr-2" size={14} />
-        <span><strong>Due:</strong> ₹{booking.dueAmount?.toFixed(2)}</span>
+        <span><strong>Due:</strong> {currency.symbol}{booking.dueAmount?.toFixed(2)}</span>
       </div>
     </div>
 
@@ -101,6 +102,7 @@ const formatDate = (dateString) => {
 };
 
 const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = [], onClose }) => {
+  const currency = useSelector((state) => state.currency.value);
   if (!isOpen || !customer) return null;
 
   const totalSpent = bookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0);
@@ -162,7 +164,7 @@ const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = []
                 <StatCard 
                   icon={<FiDollarSign />} 
                   label="Total Spent" 
-                  value={`₹${totalSpent.toFixed(2)}`} 
+                  value={`${currency.symbol}${totalSpent.toFixed(2)}`} 
                   color={{ bg: 'bg-green-50', text: 'text-green-600' }}
                 />
                 <StatCard 
@@ -180,7 +182,7 @@ const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = []
                 <StatCard 
                   icon={<FiAlertCircle />} 
                   label="Outstanding" 
-                  value={`₹${totalOutstanding.toFixed(2)}`} 
+                  value={`${currency.symbol}${totalOutstanding.toFixed(2)}`} 
                   color={{ bg: 'bg-red-50', text: 'text-red-600' }}
                 />
               </div>
@@ -216,6 +218,7 @@ const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = []
                       key={booking.id} 
                       booking={booking} 
                       getItemName={getItemName} 
+                      currency={currency}
                     />
                   ))}
                 </motion.ul>

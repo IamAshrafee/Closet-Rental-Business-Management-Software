@@ -14,6 +14,7 @@ import {
   FiStar,
   FiCreditCard
 } from 'react-icons/fi';
+import { useSelector } from 'react-redux';
 
 const timeSince = (date) => {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
@@ -53,6 +54,7 @@ const StatItem = ({ icon, label, value, color }) => (
 );
 
 const CustomerCard = ({ customer, onEdit, onDelete, onHistoryClick }) => {
+  const currency = useSelector((state) => state.currency.value);
   if (!customer) return null;
 
   const {
@@ -136,7 +138,7 @@ const CustomerCard = ({ customer, onEdit, onDelete, onHistoryClick }) => {
           <StatItem 
             icon={<FiDollarSign size={16} />} 
             label="Total Spent" 
-            value={`₹${totalSpent.toFixed(2)}`} 
+            value={`${currency.symbol}${totalSpent.toFixed(2)}`} 
             color="green" 
           />
           <StatItem 
@@ -154,7 +156,7 @@ const CustomerCard = ({ customer, onEdit, onDelete, onHistoryClick }) => {
           <StatItem 
             icon={<FiAlertCircle size={16} />} 
             label="Outstanding" 
-            value={`₹${totalOutstanding.toFixed(2)}`} 
+            value={`${currency.symbol}${totalOutstanding.toFixed(2)}`} 
             color="red" 
           />
         </div>

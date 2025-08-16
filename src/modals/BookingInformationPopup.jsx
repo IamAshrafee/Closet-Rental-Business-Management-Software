@@ -25,6 +25,7 @@ const BookingInformationPopup = ({ booking, onClose }) => {
     const [detailedItems, setDetailedItems] = useState([]);
     const db = getDatabase();
     const userInfo = useSelector((state) => state.userLogInfo.value);
+    const currency = useSelector((state) => state.currency.value);
 
     useEffect(() => {
         if (userInfo && booking) {
@@ -101,7 +102,7 @@ const BookingInformationPopup = ({ booking, onClose }) => {
                         <DetailSection title="Rented Items">
                             {detailedItems.map((item, index) => (
                                 <div key={`${item.itemId}-${index}`} className="py-1 border-b last:border-none">
-                                    <InfoPair label={item.name || 'Item not found'} value={`₹${parseFloat(item.calculatedPrice || 0).toFixed(2)}`} />
+                                    <InfoPair label={item.name || 'Item not found'} value={`${currency.symbol}${parseFloat(item.calculatedPrice || 0).toFixed(2)}`} />
                                     <p className="text-xs text-gray-500 pl-2">{booking.startDate} to {booking.endDate}</p>
                                 </div>
                             ))}
@@ -109,18 +110,18 @@ const BookingInformationPopup = ({ booking, onClose }) => {
                     )}
 
                     <DetailSection title="Financials">
-                        <InfoPair label="Total Rent" value={`₹${detailedItems.reduce((sum, i) => sum + parseFloat(i.calculatedPrice || 0), 0).toFixed(2)}`} />
-                        <InfoPair label="Delivery Charge" value={`₹${parseFloat(deliveryCharge || 0).toFixed(2)}`} />
-                        <InfoPair label="Other Charges" value={`₹${parseFloat(otherCharges || 0).toFixed(2)}`} />
+                        <InfoPair label="Total Rent" value={`${currency.symbol}${detailedItems.reduce((sum, i) => sum + parseFloat(i.calculatedPrice || 0), 0).toFixed(2)}`} />
+                        <InfoPair label="Delivery Charge" value={`${currency.symbol}${parseFloat(deliveryCharge || 0).toFixed(2)}`} />
+                        <InfoPair label="Other Charges" value={`${currency.symbol}${parseFloat(otherCharges || 0).toFixed(2)}`} />
                         <hr className="my-1"/>
-                        <InfoPair label="Subtotal" value={`₹${parseFloat(totalAmount || 0).toFixed(2)}`} />
+                        <InfoPair label="Subtotal" value={`${currency.symbol}${parseFloat(totalAmount || 0).toFixed(2)}`} />
                         {advances && advances.map((adv, index) => (
-                             <InfoPair key={`advance-${index}`} label={`Advance on ${adv.date}`} value={`- ₹${parseFloat(adv.amount || 0).toFixed(2)}`} />
+                             <InfoPair key={`advance-${index}`} label={`Advance on ${adv.date}`} value={`- ${currency.symbol}${parseFloat(adv.amount || 0).toFixed(2)}`} />
                         ))}
                         <hr className="my-1"/>
                         <div className="flex justify-between font-bold text-lg text-indigo-600">
                             <p>Due Amount:</p>
-                            <p>₹{parseFloat(dueAmount || 0).toFixed(2)}</p>
+                            <p>{currency.symbol}{parseFloat(dueAmount || 0).toFixed(2)}</p>
                         </div>
                     </DetailSection>
 

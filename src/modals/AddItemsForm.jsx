@@ -53,6 +53,7 @@ const RadioGroup = ({ label, name, options, formData, handleRadioChange, classNa
 );
 
 const AddItemsForm = ({ isOpen, onClose, item }) => {
+  const currency = useSelector((state) => state.currency.value);
   const initialFormData = {
     name: '',
     category: '',
@@ -315,7 +316,7 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                 <InputField label="Purchased From" name="purchaseFrom" formData={formData} errors={errors} handleChange={handleChange} />
                 <InputField label="Item's Country" name="itemCountry" formData={formData} errors={errors} handleChange={handleChange} />
                 <InputField 
-                  label="Purchase Price" 
+                  label={`Purchase Price (${currency.symbol})`}
                   name="purchasePrice" 
                   type="number" 
                   required 
@@ -385,7 +386,7 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
               
               {formData.rentOption === 'fixed' && (
                 <InputField
-                  label="Rent Price"
+                  label={`Rent Price (${currency.symbol})`}
                   name="rentValue"
                   type="number"
                   required
@@ -397,7 +398,7 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
               
               {formData.rentOption === 'per-day' && (
                 <InputField
-                  label="Price Per Day"
+                  label={`Price Per Day (${currency.symbol})`}
                   name="rentPerDay"
                   type="number"
                   required
@@ -409,8 +410,8 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
               
               {formData.rentOption === 'range' && (
                 <div className="grid grid-cols-2 gap-4">
-                  <InputField label="From" name="rentFrom" type="number" required min="0" step="0.01" formData={formData} errors={errors} handleChange={handleChange} />
-                  <InputField label="To" name="rentTo" type="number" required min="0" step="0.01" formData={formData} errors={errors} handleChange={handleChange} />
+                  <InputField label={`From (${currency.symbol})`} name="rentFrom" type="number" required min="0" step="0.01" formData={formData} errors={errors} handleChange={handleChange} />
+                  <InputField label={`To (${currency.symbol})`} name="rentTo" type="number" required min="0" step="0.01" formData={formData} errors={errors} handleChange={handleChange} />
                 </div>
               )}
             </div>

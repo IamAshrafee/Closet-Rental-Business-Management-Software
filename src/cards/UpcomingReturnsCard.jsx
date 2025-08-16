@@ -9,8 +9,10 @@ import {
   FiMapPin
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSelector } from 'react-redux';
 
 const UpcomingReturnsCard = ({ bookings, onReturnClick, formatDate }) => {
+  const currency = useSelector((state) => state.currency.value);
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full overflow-hidden flex flex-col">
       <div className="p-5 border-b border-gray-200">
@@ -78,12 +80,12 @@ const UpcomingReturnsCard = ({ bookings, onReturnClick, formatDate }) => {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center">
                         <FiDollarSign className="text-green-500 mr-2" size={14} />
-                        <span className="font-medium">₹{booking.totalAmount?.toFixed(2)}</span>
+                        <span className="font-medium">{currency.symbol}{booking.totalAmount?.toFixed(2)}</span>
                       </div>
                       {booking.dueAmount > 0 && (
                         <div className="flex items-center text-red-600 text-sm font-medium">
                           <FiAlertCircle className="mr-1" size={14} />
-                          <span>₹{booking.dueAmount?.toFixed(2)} due</span>
+                          <span>{currency.symbol}{booking.dueAmount?.toFixed(2)} due</span>
                         </div>
                       )}
                     </div>

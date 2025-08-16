@@ -4,6 +4,7 @@ import { FiTag, FiGrid, FiMaximize2, FiDroplet, FiCalendar, FiMapPin,
          FiDollarSign, FiInfo, FiCheckCircle, FiXCircle, FiTrendingUp, 
          FiFileText, FiImage, FiEdit2 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSelector } from 'react-redux';
 
 const DetailItem = ({ icon, label, value, className = '' }) => {
     if (!value) return null;
@@ -19,6 +20,7 @@ const DetailItem = ({ icon, label, value, className = '' }) => {
 };
 
 const ItemInformationPopup = ({ item, onClose, onEdit }) => {
+    const currency = useSelector((state) => state.currency.value);
     if (!item) {
         return null;
     }
@@ -122,12 +124,12 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
                                 <DetailItem 
                                     icon={<FiDollarSign />} 
                                     label="Purchase Price" 
-                                    value={purchasePrice} 
+                                    value={`${currency.symbol}${purchasePrice}`} 
                                 />
                                 <DetailItem 
                                     icon={<FiDollarSign />} 
                                     label="Rent Price" 
-                                    value={rentPrice} 
+                                    value={`${currency.symbol}${rentPrice}`} 
                                 />
                             </div>
 

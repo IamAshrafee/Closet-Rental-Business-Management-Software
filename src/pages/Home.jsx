@@ -84,6 +84,7 @@ const Home = () => {
 
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
+  const currency = useSelector((state) => state.currency.value);
 
   useEffect(() => {
     if (userInfo) {
@@ -213,7 +214,7 @@ const Home = () => {
           <StatCard
             icon={<FiDollarSign size={24} />}
             title="Total Revenue"
-            value={`₹${stats.totalRevenue.toFixed(2)}`}
+            value={`${currency.symbol}${stats.totalRevenue.toFixed(2)}`}
             color="yellow"
           />
         </div>
@@ -264,7 +265,7 @@ const Home = () => {
                 </div>
                 <div className="text-right">
                   <p className="font-medium">
-                    ₹{booking.totalAmount.toFixed(2)}
+                    {currency.symbol}{booking.totalAmount.toFixed(2)}
                   </p>
                   <p className="text-sm text-gray-500">
                     {new Date(booking.deliveryDate).toLocaleDateString()}

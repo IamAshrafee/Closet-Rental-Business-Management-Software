@@ -97,6 +97,7 @@ const Alert = ({ type, message, onClose }) => (
 );
 
 const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
+  const currency = useSelector((state) => state.currency.value);
   const [bookingDetails, setBookingDetails] = useState({
     customerId: '',
     items: [],
@@ -597,7 +598,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                         name="price" 
                         value={item.price} 
                         onChange={(e) => handleItemChange(index, e)} 
-                        placeholder="Price (₹)"
+                        placeholder={`Price (${currency.symbol})`}
                         label="Price"
                         error={errors[`items.${index}.price`]}
                         required
@@ -606,7 +607,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                     
                     {item.calculatedPrice > 0 && (
                       <div className="text-right text-sm font-medium text-green-700">
-                        Calculated Price: ₹{item.calculatedPrice.toFixed(2)}
+                        Calculated Price: {currency.symbol}{item.calculatedPrice.toFixed(2)}
                       </div>
                     )}
                   </motion.div>
@@ -633,7 +634,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                 value={bookingDetails.deliveryCharge} 
                 onChange={handleInputChange} 
                 placeholder="e.g., 50"
-                label="Delivery Charge (₹)"
+                label={`Delivery Charge (${currency.symbol})`}
                 error={errors.deliveryCharge}
               />
               
@@ -643,7 +644,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                 value={bookingDetails.otherCharges} 
                 onChange={handleInputChange} 
                 placeholder="e.g., 20"
-                label="Other Charges (₹)"
+                label={`Other Charges (${currency.symbol})`}
                 error={errors.otherCharges}
               />
               
@@ -657,7 +658,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                       name="amount" 
                       value={adv.amount} 
                       onChange={(e) => handleAdvanceChange(index, e)} 
-                      placeholder="Amount (₹)"
+                      placeholder={`Amount (${currency.symbol})`}
                       error={errors[`advances.${index}.amount`]}
                     />
                     <InputField 
@@ -697,27 +698,27 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between opacity-80">
                   <p>Total Rent:</p>
-                  <p>₹{totalRent.toFixed(2)}</p>
+                  <p>{currency.symbol}{totalRent.toFixed(2)}</p>
                 </div>
                 
                 <div className="flex justify-between opacity-80">
                   <p>Total Charges:</p>
-                  <p>₹{totalCharges.toFixed(2)}</p>
+                  <p>{currency.symbol}{totalCharges.toFixed(2)}</p>
                 </div>
                 
                 <div className="flex justify-between opacity-80 border-b border-indigo-400 pb-2 mb-2">
                   <p>Subtotal:</p>
-                  <p>₹{(totalRent + totalCharges).toFixed(2)}</p>
+                  <p>{currency.symbol}{(totalRent + totalCharges).toFixed(2)}</p>
                 </div>
                 
                 <div className="flex justify-between text-green-300 font-medium">
                   <p>Total Advance:</p>
-                  <p>- ₹{totalAdvance.toFixed(2)}</p>
+                  <p>- {currency.symbol}{totalAdvance.toFixed(2)}</p>
                 </div>
                 
                 <div className="flex justify-between font-bold text-xl mt-3 pt-3 border-t border-indigo-400">
                   <p>Due Amount:</p>
-                  <p>₹{dueAmount.toFixed(2)}</p>
+                  <p>{currency.symbol}{dueAmount.toFixed(2)}</p>
                 </div>
               </div>
               

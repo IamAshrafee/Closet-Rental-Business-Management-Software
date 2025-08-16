@@ -33,6 +33,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
   const [isExpanded, setIsExpanded] = useState(false);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
+  const currency = useSelector((state) => state.currency.value);
 
   useEffect(() => {
     if (userInfo && booking.customerId) {
@@ -146,12 +147,12 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
         <div className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg">
           <div className="flex items-center">
             <FiDollarSign className="text-gray-500 mr-2" size={14} />
-            <span className="font-medium">₹{totalAmount.toFixed(2)}</span>
+            <span className="font-medium">{currency.symbol}{totalAmount.toFixed(2)}</span>
           </div>
           {isDue && (
             <div className="flex items-center text-red-600 text-sm font-medium">
               <FiAlertCircle className="mr-1" size={14} />
-              <span>₹{dueAmount.toFixed(2)} due</span>
+              <span>{currency.symbol}{dueAmount.toFixed(2)} due</span>
             </div>
           )}
         </div>

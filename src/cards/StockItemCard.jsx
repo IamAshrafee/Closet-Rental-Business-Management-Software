@@ -1,8 +1,10 @@
 import React from 'react';
 import { FiEdit, FiTrash2, FiDollarSign, FiPackage, FiEye, FiCalendar } from 'react-icons/fi';
 import { motion } from 'framer-motion';
+import { useSelector } from 'react-redux';
 
 const StockItemCard = ({ item, onClick, onEdit, onDelete }) => {
+  const currency = useSelector((state) => state.currency.value);
   if (!item) {
     return null;
   }
@@ -29,11 +31,11 @@ const StockItemCard = ({ item, onClick, onEdit, onDelete }) => {
   const getPrice = () => {
     switch (rentOption) {
       case 'fixed':
-        return `₹${rentValue}`;
+        return `${currency.symbol}${rentValue}`;
       case 'per-day':
-        return `₹${rentPerDay}/day`;
+        return `${currency.symbol}${rentPerDay}/day`;
       case 'range':
-        return `₹${rentFrom}-${rentTo}`;
+        return `${currency.symbol}${rentFrom}-${rentTo}`;
       default:
         return 'N/A';
     }

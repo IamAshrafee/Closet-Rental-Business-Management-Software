@@ -96,6 +96,27 @@ const AddItemsForm = ({ onClose, item }) => {
     }
   }, [item]);
 
+  useEffect(() => {
+    const { purchasePrice, rentOption, rentValue, rentFrom } = formData;
+    if (purchasePrice > 0) {
+      let rent = 0;
+      if (rentOption === 'fixed' && rentValue > 0) {
+        rent = rentValue;
+      } else if (rentOption === 'range' && rentFrom > 0) {
+        rent = rentFrom;
+      }
+
+      if (rent > 0) {
+        setFormData(prev => ({
+          ...prev,
+          target: Math.ceil(purchasePrice / rent)
+        }));
+      } else {
+        setFormData(prev => ({ ...prev, target: '' }));
+      }
+    }
+  }, [formData.purchasePrice, formData.rentOption, formData.rentValue, formData.rentFrom]);
+
   const uploadImage = async (file) => {
     setIsUploading(true);
     const data = new FormData();
@@ -219,7 +240,7 @@ const AddItemsForm = ({ onClose, item }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4 overflow-y-auto"
+                className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4 overflow-y-auto"
         onClick={onClose}
       >
         <motion.form
@@ -406,6 +427,7 @@ const AddItemsForm = ({ onClose, item }) => {
                   onChange={handleChange}
                   min="1"
                   step="1"
+                  readOnly={formData.rentOption !== 'per-day'}
                   className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
                     errors.target ? 'border-red-500' : 'border-gray-300'
                   }`}

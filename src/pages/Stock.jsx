@@ -13,6 +13,7 @@ const Stock = () => {
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [items, setItems] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const db = getDatabase();
@@ -22,6 +23,21 @@ const Stock = () => {
     if (userInfo) {
       setIsLoading(true);
       const itemsRef = ref(db, `users/${userInfo.uid}/items`);
+      const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
+
+      onValue(bookingsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const bookingsList = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }));
+          setBookings(bookingsList);
+        } else {
+          setBookings([]);
+        }
+      });
+
       onValue(itemsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -37,6 +53,11 @@ const Stock = () => {
       });
     }
   }, [db, userInfo]);
+
+  const itemsWithBookingCount = items.map(item => {
+    const rented = bookings.filter(booking => booking.itemName === item.name).length;
+    return { ...item, rented };
+  });
 
   const handleOpenAddModal = () => {
     setEditingItem(null);
@@ -93,7 +114,7 @@ const Stock = () => {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Inventory</h1>
             <p className="text-gray-500 text-sm sm:text-base">
-              {items.length} {items.length === 1 ? 'item' : 'items'} in stock
+              {itemsWithBookingCount.length} {itemsWithBookingCount.length === 1 ? 'item' : 'items'} in stock
             </p>
           </div>
           <motion.button
@@ -112,7 +133,7 @@ const Stock = () => {
               <div key={index} className="bg-gray-100 rounded-lg h-40 animate-pulse"></div>
             ))}
           </div>
-        ) : items.length === 0 ? (
+        ) : itemsWithBookingCount.length === 0 ? (
           <EmptyState 
             title="No Items Found"
             description="Add your first item to get started"
@@ -127,7 +148,7 @@ const Stock = () => {
             className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"
           >
             <AnimatePresence>
-              {items.map((item) => (
+              {itemsWithBookingCount.map((item) => (
                 <motion.div
                   key={item.id}
                   variants={itemVariants}

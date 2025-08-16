@@ -25,7 +25,7 @@ const StatCard = ({ icon, label, value, color }) => (
   </motion.div>
 );
 
-const BookingItem = ({ booking, getItemName, currency }) => (
+const BookingItem = ({ booking, getItemName, currency, formatDate }) => (
   <motion.li 
     className="p-5 border border-gray-200 rounded-xl bg-white shadow-xs mb-4"
     initial={{ opacity: 0, y: 10 }}
@@ -95,14 +95,9 @@ const getStatusColor = (status) => {
   }
 };
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  const options = { year: 'numeric', month: 'short', day: 'numeric' };
-  return new Date(dateString).toLocaleDateString(undefined, options);
-};
-
 const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = [], onClose }) => {
   const currency = useSelector((state) => state.currency.value);
+  const dateTimeFormat = useSelector((state) => state.dateTime.value);
   if (!isOpen || !customer) return null;
 
   const totalSpent = bookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0);
@@ -113,6 +108,25 @@ const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = []
   const getItemName = (itemId) => {
     const item = stockItems.find(item => item.id === itemId);
     return item ? item.name : 'Unknown Item';
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+
+    switch (dateTimeFormat.dateFormat) {
+      case 'MM/DD/YYYY':
+        return `${month}/${day}/${year}`;
+      case 'DD/MM/YYYY':
+        return `${day}/${month}/${year}`;
+      case 'YYYY-MM-DD':
+        return `${year}-${month}-${day}`;
+      default:
+        return date.toLocaleDateString(dateTimeFormat.locale);
+    }
   };
 
   return (
@@ -219,6 +233,7 @@ const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = []
                       booking={booking} 
                       getItemName={getItemName} 
                       currency={currency}
+                      formatDate={formatDate}
                     />
                   ))}
                 </motion.ul>

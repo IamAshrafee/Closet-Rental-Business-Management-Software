@@ -26,6 +26,7 @@ const BookingInformationPopup = ({ booking, onClose }) => {
     const db = getDatabase();
     const userInfo = useSelector((state) => state.userLogInfo.value);
     const currency = useSelector((state) => state.currency.value);
+    const dateTimeFormat = useSelector((state) => state.dateTime.value);
 
     useEffect(() => {
         if (userInfo && booking) {
@@ -66,8 +67,20 @@ const BookingInformationPopup = ({ booking, onClose }) => {
         notes,
         totalAmount,
         dueAmount,
-        status
+        status,
+        startDate,
+        endDate
     } = booking;
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        const options = {};
+        if (dateTimeFormat.dateFormat.includes('YYYY')) options.year = 'numeric';
+        if (dateTimeFormat.dateFormat.includes('MM')) options.month = '2-digit';
+        if (dateTimeFormat.dateFormat.includes('DD')) options.day = '2-digit';
+        return date.toLocaleDateString(dateTimeFormat.locale, options);
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center backdrop-blur-sm z-50 p-4" onClick={onClose}>
@@ -92,8 +105,10 @@ const BookingInformationPopup = ({ booking, onClose }) => {
 
                     <DetailSection title="Booking Details">
                         <InfoPair label="Status" value={status} />
-                        <InfoPair label="Delivery Date" value={deliveryDate} />
-                        <InfoPair label="Return Date" value={returnDate} />
+                        <InfoPair label="Delivery Date" value={formatDate(deliveryDate)} />
+                        <InfoPair label="Return Date" value={formatDate(returnDate)} />
+                        <InfoPair label="Rent Start Date" value={formatDate(startDate)} />
+                        <InfoPair label="Rent End Date" value={formatDate(endDate)} />
                         <InfoPair label="Delivery Type" value={deliveryType === 'HomeDelivery' ? 'Home Delivery' : 'Customer Pickup'} />
                         {deliveryType === 'HomeDelivery' && <InfoPair label="Address" value={address} />}
                     </DetailSection>
@@ -103,7 +118,7 @@ const BookingInformationPopup = ({ booking, onClose }) => {
                             {detailedItems.map((item, index) => (
                                 <div key={`${item.itemId}-${index}`} className="py-1 border-b last:border-none">
                                     <InfoPair label={item.name || 'Item not found'} value={`${currency.symbol}${parseFloat(item.calculatedPrice || 0).toFixed(2)}`} />
-                                    <p className="text-xs text-gray-500 pl-2">{booking.startDate} to {booking.endDate}</p>
+                                    <p className="text-xs text-gray-500 pl-2">{formatDate(booking.startDate)} to {formatDate(booking.endDate)}</p>
                                 </div>
                             ))}
                         </DetailSection>
@@ -116,7 +131,7 @@ const BookingInformationPopup = ({ booking, onClose }) => {
                         <hr className="my-1"/>
                         <InfoPair label="Subtotal" value={`${currency.symbol}${parseFloat(totalAmount || 0).toFixed(2)}`} />
                         {advances && advances.map((adv, index) => (
-                             <InfoPair key={`advance-${index}`} label={`Advance on ${adv.date}`} value={`- ${currency.symbol}${parseFloat(adv.amount || 0).toFixed(2)}`} />
+                             <InfoPair key={`advance-${index}`} label={`Advance on ${formatDate(adv.date)}`} value={`- ${currency.symbol}${parseFloat(adv.amount || 0).toFixed(2)}`} />
                         ))}
                         <hr className="my-1"/>
                         <div className="flex justify-between font-bold text-lg text-indigo-600">

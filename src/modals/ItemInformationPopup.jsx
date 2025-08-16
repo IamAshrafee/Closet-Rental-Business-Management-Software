@@ -21,6 +21,7 @@ const DetailItem = ({ icon, label, value, className = '' }) => {
 
 const ItemInformationPopup = ({ item, onClose, onEdit }) => {
     const currency = useSelector((state) => state.currency.value);
+    const dateTimeFormat = useSelector((state) => state.dateTime.value);
     if (!item) {
         return null;
     }
@@ -42,6 +43,16 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
         description,
         imageUrl,
     } = item;
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        const options = {};
+        if (dateTimeFormat.dateFormat.includes('YYYY')) options.year = 'numeric';
+        if (dateTimeFormat.dateFormat.includes('MM')) options.month = '2-digit';
+        if (dateTimeFormat.dateFormat.includes('DD')) options.day = '2-digit';
+        return date.toLocaleDateString(dateTimeFormat.locale, options);
+    };
 
     return (
         <AnimatePresence>
@@ -138,7 +149,7 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
                                 <DetailItem 
                                     icon={<FiCalendar />} 
                                     label="Purchase Date" 
-                                    value={purchaseDate} 
+                                    value={formatDate(purchaseDate)} 
                                 />
                                 <DetailItem 
                                     icon={<FiMapPin />} 

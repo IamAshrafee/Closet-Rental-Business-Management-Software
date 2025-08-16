@@ -3,6 +3,7 @@ import Sidebar from '../layout/Sidebar';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrency } from '../slice/currencySlice';
 import { setCompanyName } from '../slice/companySlice';
+import { setDateTimeFormat } from '../slice/dateTimeSlice';
 
 const currencies = [
   { symbol: '$', code: 'USD' },
@@ -13,10 +14,22 @@ const currencies = [
   { symbol: '৳', code: 'BDT' },
 ];
 
+const dateFormats = [
+  { label: 'MM/DD/YYYY', format: 'MM/DD/YYYY' },
+  { label: 'DD/MM/YYYY', format: 'DD/MM/YYYY' },
+  { label: 'YYYY-MM-DD', format: 'YYYY-MM-DD' },
+];
+
+const timeFormats = [
+  { label: 'hh:mm A (12-hour)', format: 'hh:mm A' },
+  { label: 'HH:mm (24-hour)', format: 'HH:mm' },
+];
+
 const Settings = () => {
   const dispatch = useDispatch();
   const selectedCurrency = useSelector((state) => state.currency.value);
   const companyName = useSelector((state) => state.company.value);
+  const selectedDateTimeFormat = useSelector((state) => state.dateTime.value);
 
   const handleCurrencyChange = (e) => {
     const currency = currencies.find(c => c.code === e.target.value);
@@ -27,6 +40,16 @@ const Settings = () => {
 
   const handleCompanyNameChange = (e) => {
     dispatch(setCompanyName(e.target.value));
+  };
+
+  const handleDateFormatChange = (e) => {
+    const newFormat = e.target.value;
+    dispatch(setDateTimeFormat({ ...selectedDateTimeFormat, dateFormat: newFormat }));
+  };
+
+  const handleTimeFormatChange = (e) => {
+    const newFormat = e.target.value;
+    dispatch(setDateTimeFormat({ ...selectedDateTimeFormat, timeFormat: newFormat }));
   };
 
   return (
@@ -67,6 +90,34 @@ const Settings = () => {
                 onChange={handleCompanyNameChange}
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-gray-600">Date Format</p>
+              <select
+                value={selectedDateTimeFormat.dateFormat}
+                onChange={handleDateFormatChange}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {dateFormats.map(format => (
+                  <option key={format.format} value={format.format}>
+                    {format.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-gray-600">Time Format</p>
+              <select
+                value={selectedDateTimeFormat.timeFormat}
+                onChange={handleTimeFormatChange}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {timeFormats.map(format => (
+                  <option key={format.format} value={format.format}>
+                    {format.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

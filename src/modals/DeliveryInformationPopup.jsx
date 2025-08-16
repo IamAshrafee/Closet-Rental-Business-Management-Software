@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 
 const DeliveryInformationPopup = ({ booking, stockItems, onClose }) => {
   const currency = useSelector((state) => state.currency.value);
+  const dateTimeFormat = useSelector((state) => state.dateTime.value);
   if (!booking) {
     return null;
   }
@@ -12,6 +13,16 @@ const DeliveryInformationPopup = ({ booking, stockItems, onClose }) => {
   const getItemName = (itemId) => {
     const item = stockItems.find(item => item.id === itemId);
     return item ? item.name : 'Item not found';
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const options = {};
+    if (dateTimeFormat.dateFormat.includes('YYYY')) options.year = 'numeric';
+    if (dateTimeFormat.dateFormat.includes('MM')) options.month = '2-digit';
+    if (dateTimeFormat.dateFormat.includes('DD')) options.day = '2-digit';
+    return date.toLocaleDateString(dateTimeFormat.locale, options);
   };
 
   return (
@@ -53,8 +64,8 @@ const DeliveryInformationPopup = ({ booking, stockItems, onClose }) => {
             <h3 className="text-lg font-semibold mb-3 text-green-800 flex items-center"><FiCalendar className="mr-2" /> Booking Information</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-gray-700 text-sm">
               <p className="flex items-center"><FiInfo className="mr-2 text-green-500" /> <strong>Booking ID:</strong> {booking.id}</p>
-              <p className="flex items-center"><FiCalendar className="mr-2 text-green-500" /> <strong>Delivery Date:</strong> {booking.deliveryDate}</p>
-              <p className="flex items-center"><FiCalendar className="mr-2 text-green-500" /> <strong>Return Date:</strong> {booking.returnDate}</p>
+              <p className="flex items-center"><FiCalendar className="mr-2 text-green-500" /> <strong>Delivery Date:</strong> {formatDate(booking.deliveryDate)}</p>
+              <p className="flex items-center"><FiCalendar className="mr-2 text-green-500" /> <strong>Return Date:</strong> {formatDate(booking.returnDate)}</p>
               <p className="flex items-center"><FiDollarSign className="mr-2 text-green-500" /> <strong>Total Amount:</strong> {currency.symbol}{booking.totalAmount?.toFixed(2)}</p>
               <p className="flex items-center"><FiDollarSign className="mr-2 text-green-500" /> <strong>Due Amount:</strong> {currency.symbol}{booking.dueAmount?.toFixed(2)}</p>
             </div>

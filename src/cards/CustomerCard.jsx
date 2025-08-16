@@ -16,8 +16,8 @@ import {
 } from 'react-icons/fi';
 import { useSelector } from 'react-redux';
 
-const timeSince = (date) => {
-  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+const timeSince = (dateString, dateFormat, locale) => {
+  const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
   
   const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -32,7 +32,21 @@ const timeSince = (date) => {
     const count = Math.floor(seconds / interval.seconds);
     if (count >= 1) {
       if (interval.label === 'year') {
-        return new Date(date).toLocaleDateString();
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+
+        switch (dateFormat) {
+          case 'MM/DD/YYYY':
+            return `${month}/${day}/${year}`;
+          case 'DD/MM/YYYY':
+            return `${day}/${month}/${year}`;
+          case 'YYYY-MM-DD':
+            return `${year}-${month}-${day}`;
+          default:
+            return date.toLocaleDateString(locale);
+        }
       }
       return `${count} ${interval.label}${count !== 1 ? 's' : ''} ago`;
     }
@@ -55,6 +69,7 @@ const StatItem = ({ icon, label, value, color }) => (
 
 const CustomerCard = ({ customer, onEdit, onDelete, onHistoryClick }) => {
   const currency = useSelector((state) => state.currency.value);
+  const dateTimeFormat = useSelector((state) => state.dateTime.value);
   if (!customer) return null;
 
   const {
@@ -82,7 +97,7 @@ const CustomerCard = ({ customer, onEdit, onDelete, onHistoryClick }) => {
               <h3 className="text-lg font-semibold text-gray-800 font-poppins">{name}</h3>
               <div className="flex items-center text-xs text-gray-500 mt-1">
                 <FiClock className="mr-1" size={12} />
-                <span>Member since {timeSince(createdAt)}</span>
+                <span>Member since {timeSince(createdAt, dateTimeFormat.dateFormat, dateTimeFormat.locale)}</span>
               </div>
             </div>
           </div>

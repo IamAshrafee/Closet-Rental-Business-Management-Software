@@ -5,6 +5,8 @@ import { getDatabase, ref, push, set, update } from 'firebase/database';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import CustomDatePicker from '../components/CustomDatePicker';
+
 const InputField = ({ label, name, type = 'text', required = false, placeholder = '', min, step, formData, errors, handleChange, children }) => (
   <div className="mb-4">
     <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
@@ -158,6 +160,14 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
       ...prev,
       [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value
     }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const handleDateChange = (name, date) => {
+    const dateString = date ? date.toISOString().split('T')[0] : '';
+    setFormData(prev => ({ ...prev, [name]: dateString }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
@@ -335,7 +345,12 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
 
               {/* Right Column */}
               <div>
-                <InputField label="Purchase Date" name="purchaseDate" type="date" formData={formData} errors={errors} handleChange={handleChange} />
+                <CustomDatePicker 
+                  label="Purchase Date" 
+                  selected={formData.purchaseDate} 
+                  onChange={date => handleDateChange('purchaseDate', date)} 
+                  error={errors.purchaseDate} 
+                />
                 <InputField label="Purchased From" name="purchaseFrom" formData={formData} errors={errors} handleChange={handleChange} />
                 <InputField label="Item's Country" name="itemCountry" formData={formData} errors={errors} handleChange={handleChange} />
                 <InputField 
@@ -360,12 +375,12 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                 />
                 
                 {formData.availability === 'not-available' && (
-                  <InputField 
+                  <CustomDatePicker 
                     label="Available From" 
-                    name="availableFrom" 
-                    type="date" 
+                    selected={formData.availableFrom} 
+                    onChange={date => handleDateChange('availableFrom', date)} 
+                    error={errors.availableFrom} 
                     required={formData.availability === 'not-available'}
-                    formData={formData} errors={errors} handleChange={handleChange}
                   />
                 )}
                 

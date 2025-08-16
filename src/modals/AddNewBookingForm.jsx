@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getDatabase, ref, onValue, push, set, update, get } from 'firebase/database';
 import { useSelector } from 'react-redux';
 import Select from 'react-select';
+import CustomDatePicker from '../components/CustomDatePicker';
 
 // Reusable UI Components
 const FormSection = ({ title, icon, children, required = false }) => (
@@ -249,6 +250,15 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
     }
   };
 
+  const handleDateChange = (name, date) => {
+    // Convert date object to YYYY-MM-DD string
+    const dateString = date ? date.toISOString().split('T')[0] : '';
+    setBookingDetails(prev => ({ ...prev, [name]: dateString }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+
   // Add new item
   const handleAddItem = () => {
     setBookingDetails(prev => ({
@@ -329,6 +339,13 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
     if (errors[`advances.${index}.${name}`]) {
       setErrors(prev => ({ ...prev, [`advances.${index}.${name}`]: null }));
     }
+  };
+
+  const handleAdvanceDateChange = (index, date) => {
+    const dateString = date ? date.toISOString().split('T')[0] : '';
+    const newAdvances = [...bookingDetails.advances];
+    newAdvances[index].date = dateString;
+    setBookingDetails(prev => ({ ...prev, advances: newAdvances }));
   };
 
   // Validate form
@@ -593,42 +610,36 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                 
                 <div />
 
-                <InputField 
-                  type="date" 
-                  name="deliveryDate" 
-                  value={bookingDetails.deliveryDate} 
-                  onChange={handleInputChange} 
+                <CustomDatePicker 
                   label="Delivery Date"
+                  selected={bookingDetails.deliveryDate}
+                  onChange={date => handleDateChange('deliveryDate', date)}
                   error={errors.deliveryDate}
                   required
                 />
                 
-                <InputField 
-                  type="date" 
-                  name="returnDate" 
-                  value={bookingDetails.returnDate} 
-                  onChange={handleInputChange} 
+                <CustomDatePicker 
                   label="Return Date"
+                  selected={bookingDetails.returnDate}
+                  onChange={date => handleDateChange('returnDate', date)}
+                  minDate={bookingDetails.deliveryDate ? new Date(bookingDetails.deliveryDate) : null}
                   error={errors.returnDate}
                   required
                 />
 
-                <InputField 
-                  type="date" 
-                  name="startDate" 
-                  value={bookingDetails.startDate} 
-                  onChange={handleInputChange} 
+                <CustomDatePicker 
                   label="Rent Start Date"
+                  selected={bookingDetails.startDate}
+                  onChange={date => handleDateChange('startDate', date)}
                   error={errors.startDate}
                   required
                 />
                 
-                <InputField 
-                  type="date" 
-                  name="endDate" 
-                  value={bookingDetails.endDate} 
-                  onChange={handleInputChange} 
+                <CustomDatePicker 
                   label="Rent End Date"
+                  selected={bookingDetails.endDate}
+                  onChange={date => handleDateChange('endDate', date)}
+                  minDate={bookingDetails.startDate ? new Date(bookingDetails.startDate) : null}
                   error={errors.endDate}
                   required
                 />
@@ -811,11 +822,9 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                       placeholder={`Amount (${currency.symbol})`}
                       error={errors[`advances.${index}.amount`]}
                     />
-                    <InputField 
-                      type="date" 
-                      name="date" 
-                      value={adv.date} 
-                      onChange={(e) => handleAdvanceChange(index, e)} 
+                    <CustomDatePicker 
+                      selected={adv.date}
+                      onChange={date => handleAdvanceDateChange(index, date)}
                     />
                   </div>
                 ))}

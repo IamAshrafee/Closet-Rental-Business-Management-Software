@@ -4,13 +4,14 @@ import { IoMdSettings } from "react-icons/io";
 import React, { useState, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FiMenu, FiX } from "react-icons/fi";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { userLogInfo } from "../slice/userSlice";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SidebarContent = ({ onLinkClick, activeLink, normalLink }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const companyName = useSelector((state) => state.company.value);
 
   const handleLogout = () => {
     dispatch(userLogInfo(null));
@@ -31,7 +32,7 @@ const SidebarContent = ({ onLinkClick, activeLink, normalLink }) => {
     <div className="h-full w-full pl-5 py-6 pr-2 border-r border-r-gray-200 flex flex-col justify-between">
       <div>
         <div className="pr-5 mb-8">
-          <p className="font-poppins text-xl font-bold text-gray-800">Rentiva - Rental</p>
+          <p className="font-poppins text-xl font-bold text-gray-800">{companyName}</p>
           <p className="font-poppins text-xs text-gray-500">Business Management</p>
         </div>
         <div className="flex flex-col gap-1">

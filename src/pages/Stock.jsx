@@ -54,8 +54,13 @@ const Stock = () => {
     }
   }, [db, userInfo]);
 
-  const itemsWithBookingCount = items.map(item => {
-    const rented = bookings.filter(booking => booking.itemName === item.name).length;
+  const itemsWithBookingCount = items.map((item) => {
+    const rented = bookings.reduce((count, booking) => {
+      if (booking.items && booking.items.some((bookingItem) => bookingItem.itemId === item.id)) {
+        return count + 1;
+      }
+      return count;
+    }, 0);
     return { ...item, rented };
   });
 

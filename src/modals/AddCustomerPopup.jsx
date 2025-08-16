@@ -24,33 +24,35 @@ const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
-    if (customer) {
-      setFormData({
-        name: customer.name || '',
-        phone: customer.phone || '',
-        altPhone: customer.altPhone || '',
-        nid: customer.nid || '',
-        parentNidType: customer.parentNidType || '',
-        parentNid: customer.parentNid || '',
-        husbandNid: customer.husbandNid || '',
-        fbId: customer.fbId || '',
-        address: customer.address || ''
-      });
-    } else {
-      // Reset form when opening for new customer
-      setFormData({
-        name: '',
-        phone: '',
-        altPhone: '',
-        nid: '',
-        parentNidType: '',
-        parentNid: '',
-        husbandNid: '',
-        fbId: '',
-        address: ''
-      });
+    if (isOpen) {
+      if (customer) {
+        setFormData({
+          name: customer.name || '',
+          phone: customer.phone || '',
+          altPhone: customer.altPhone || '',
+          nid: customer.nid || '',
+          parentNidType: customer.parentNidType || '',
+          parentNid: customer.parentNid || '',
+          husbandNid: customer.husbandNid || '',
+          fbId: customer.fbId || '',
+          address: customer.address || ''
+        });
+      } else {
+        // Reset form when opening for new customer
+        setFormData({
+          name: '',
+          phone: '',
+          altPhone: '',
+          nid: '',
+          parentNidType: '',
+          parentNid: '',
+          husbandNid: '',
+          fbId: '',
+          address: ''
+        });
+      }
+      setErrors({});
     }
-    setErrors({});
   }, [customer, isOpen]);
 
   const validateForm = () => {

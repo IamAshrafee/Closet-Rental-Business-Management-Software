@@ -88,13 +88,18 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
-    if (item) {
-      setFormData(item);
-      if (item.photo) {
-        setImageUrl(item.photo);
+    if (isOpen) {
+      if (item) {
+        setFormData(item);
+        if (item.photo) {
+          setImageUrl(item.photo);
+        }
+      } else {
+        setFormData(initialFormData);
+        setImageUrl("");
       }
     }
-  }, [item]);
+  }, [isOpen, item]);
 
   useEffect(() => {
     const { purchasePrice, rentOption, rentValue, rentFrom } = formData;

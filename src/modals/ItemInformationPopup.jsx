@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 
 const DetailItem = ({ icon, label, value, className = '', highlight }) => {
-    if (!value) return null;
+    if (!value && value !== 0) return null; // Allow 0 as a valid value
     return (
         <div className={`flex items-start py-2 ${className} ${highlight ? 'bg-indigo-50 rounded-md px-3 -mx-1' : ''}`}>
             <div className={`flex-shrink-0 mt-0.5 ${highlight ? 'text-indigo-600' : 'text-gray-500'}`}>
@@ -26,6 +26,7 @@ const DetailItem = ({ icon, label, value, className = '', highlight }) => {
 const ItemInformationPopup = ({ item, onClose, onEdit }) => {
     const currency = useSelector((state) => state.currency.value);
     const dateTimeFormat = useSelector((state) => state.dateTime.value);
+    const colorsList = useSelector((state) => state.color.value); // Get colors from Redux
     
     if (!item) return null;
 
@@ -54,14 +55,26 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
         photo: imageUrl,
     } = item;
 
+    // Find the corresponding color object from the Redux store
+    const selectedColor = colorsList.find(c => c.name === colors);
+
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
-        return date.toLocaleDateString(dateTimeFormat.locale, {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+
+        switch (dateTimeFormat.dateFormat) {
+          case 'MM/DD/YYYY':
+            return `${month}/${day}/${year}`;
+          case 'DD/MM/YYYY':
+            return `${day}/${month}/${year}`;
+          case 'YYYY-MM-DD':
+            return `${year}-${month}-${day}`;
+          default:
+            return date.toLocaleDateString(dateTimeFormat.locale);
+        }
     };
 
     const getRentPrice = () => {
@@ -196,9 +209,9 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
                                             <div className="flex items-center">
                                                 <div 
                                                     className="w-3 h-3 rounded-full mr-1.5 border border-gray-200" 
-                                                    style={{ backgroundColor: colors }}
+                                                    style={{ backgroundColor: selectedColor ? selectedColor.hex : colors }}
                                                 />
-                                                <span>{colors}</span>
+                                                <span>{selectedColor ? selectedColor.name : colors}</span>
                                             </div>
                                         } 
                                     />

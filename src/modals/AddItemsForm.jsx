@@ -55,6 +55,7 @@ const RadioGroup = ({ label, name, options, formData, handleRadioChange, classNa
 const AddItemsForm = ({ isOpen, onClose, item }) => {
   const currency = useSelector((state) => state.currency.value);
   const categories = useSelector((state) => state.category.value); // Get categories from Redux
+  const colors = useSelector((state) => state.color.value); // Get colors from Redux
   const initialFormData = {
     name: '',
     category: '',

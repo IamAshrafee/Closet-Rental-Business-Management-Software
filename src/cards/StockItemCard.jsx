@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 
 const StockItemCard = ({ item, onClick, onEdit, onDelete }) => {
   const currency = useSelector((state) => state.currency.value);
+  const colorsList = useSelector((state) => state.color.value); // Get colors from Redux
   if (!item) {
     return null;
   }
@@ -16,7 +17,7 @@ const StockItemCard = ({ item, onClick, onEdit, onDelete }) => {
     sizeValue,
     sizeFrom,
     sizeTo,
-    colors,
+    colors, // This is the color name string from the item
     rentOption,
     rentValue,
     rentPerDay,
@@ -27,6 +28,9 @@ const StockItemCard = ({ item, onClick, onEdit, onDelete }) => {
     rented,
     photo,
   } = item;
+
+  // Find the corresponding color object from the Redux store
+  const selectedColor = colorsList.find(c => c.name === colors);
 
   const getPrice = () => {
     switch (rentOption) {
@@ -128,9 +132,9 @@ const StockItemCard = ({ item, onClick, onEdit, onDelete }) => {
             <div className="flex items-center">
               <div 
                 className="w-3 h-3 rounded-full mr-1 border border-gray-200" 
-                style={{ backgroundColor: colors }}
+                style={{ backgroundColor: selectedColor ? selectedColor.hex : colors }}
               />
-              <span className="truncate max-w-[80px]">{colors}</span>
+              <span className="truncate max-w-[80px]">{selectedColor ? selectedColor.name : colors}</span>
             </div>
           )}
         </div>

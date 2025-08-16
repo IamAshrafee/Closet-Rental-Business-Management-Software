@@ -3,8 +3,9 @@ import Sidebar from '../layout/Sidebar';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrency } from '../slice/currencySlice';
 import { setCompanyName } from '../slice/companySlice';
-import { setDateTimeFormat } from '../slice/dateTimeSlice'; // Corrected import
-import { addCategory, removeCategory, updateCategory } from '../slice/categorySlice'; // Corrected import
+import { setDateTimeFormat } from '../slice/dateTimeSlice';
+import { addCategory, removeCategory, updateCategory } from '../slice/categorySlice';
+import { addColor, removeColor, updateColor } from '../slice/colorSlice';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 
 const currencies = [
@@ -33,10 +34,17 @@ const Settings = () => {
   const companyName = useSelector((state) => state.company.value);
   const selectedDateTimeFormat = useSelector((state) => state.dateTime.value);
   const categories = useSelector((state) => state.category.value);
+  const colors = useSelector((state) => state.color.value);
 
   const [newCategory, setNewCategory] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
   const [editedCategoryName, setEditedCategoryName] = useState('');
+
+  const [newColorName, setNewColorName] = useState('');
+  const [newColorHex, setNewColorHex] = useState('#000000');
+  const [editingColor, setEditingColor] = useState(null);
+  const [editedColorName, setEditedColorName] = useState('');
+  const [editedColorHex, setEditedColorHex] = useState('');
 
   const handleCurrencyChange = (e) => {
     const currency = currencies.find(c => c.code === e.target.value);
@@ -86,6 +94,39 @@ const Settings = () => {
   const handleCancelEdit = () => {
     setEditingCategory(null);
     setEditedCategoryName('');
+  };
+
+  const handleAddColor = () => {
+    if (newColorName.trim() !== '' && !colors.some(color => color.name === newColorName.trim())) {
+      dispatch(addColor({ name: newColorName.trim(), hex: newColorHex }));
+      setNewColorName('');
+      setNewColorHex('#000000');
+    }
+  };
+
+  const handleRemoveColor = (colorToRemove) => {
+    dispatch(removeColor(colorToRemove));
+  };
+
+  const handleEditColor = (color) => {
+    setEditingColor(color);
+    setEditedColorName(color.name);
+    setEditedColorHex(color.hex);
+  };
+
+  const handleSaveColor = () => {
+    if (editedColorName.trim() !== '' && editedColorHex.trim() !== '') {
+      dispatch(updateColor({ oldColorName: editingColor.name, newColorName: editedColorName.trim(), newColorHex: editedColorHex }));
+      setEditingColor(null);
+      setEditedColorName('');
+      setEditedColorHex('');
+    }
+  };
+
+  const handleCancelColorEdit = () => {
+    setEditingColor(null);
+    setEditedColorName('');
+    setEditedColorHex('');
   };
 
   return (
@@ -215,6 +256,93 @@ const Settings = () => {
                       </button>
                       <button
                         onClick={() => handleRemoveCategory(category)}
+                        className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100"
+                      >
+                        <FiTrash2 size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md mt-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Manage Colors</h2>
+          <div className="flex items-center mb-4">
+            <input
+              type="text"
+              placeholder="New Color Name"
+              value={newColorName}
+              onChange={(e) => setNewColorName(e.target.value)}
+              className="flex-grow border border-gray-300 rounded-l-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <input
+              type="color"
+              value={newColorHex}
+              onChange={(e) => setNewColorHex(e.target.value)}
+              className="w-10 h-10 p-1 border border-gray-300 rounded-r-lg cursor-pointer"
+              title="Pick a color"
+            />
+            <button
+              onClick={handleAddColor}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-r-lg hover:bg-indigo-700 flex items-center ml-2"
+            >
+              <FiPlus className="mr-2" /> Add
+            </button>
+          </div>
+
+          <ul className="space-y-2">
+            {colors.map((color, index) => (
+              <li key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                {editingColor && editingColor.name === color.name ? (
+                  <div className="flex-grow flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={editedColorName}
+                      onChange={(e) => setEditedColorName(e.target.value)}
+                      className="flex-grow border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                    <input
+                      type="color"
+                      value={editedColorHex}
+                      onChange={(e) => setEditedColorHex(e.target.value)}
+                      className="w-8 h-8 p-1 border border-gray-300 rounded-md cursor-pointer"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-5 h-5 rounded-full border border-gray-300" style={{ backgroundColor: color.hex }}></div>
+                    <span className="text-gray-700 font-medium">{color.name} ({color.hex})</span>
+                  </div>
+                )}
+                <div className="flex space-x-2">
+                  {editingColor && editingColor.name === color.name ? (
+                    <>
+                      <button
+                        onClick={handleSaveColor}
+                        className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleCancelColorEdit}
+                        className="text-gray-600 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleEditColor(color)}
+                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100"
+                      >
+                        <FiEdit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveColor(color)}
                         className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100"
                       >
                         <FiTrash2 size={16} />

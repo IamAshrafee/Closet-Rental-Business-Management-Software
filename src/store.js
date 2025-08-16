@@ -4,6 +4,7 @@ import currencySlice from "./slice/currencySlice";
 import companySlice from "./slice/companySlice";
 import dateTimeSlice from "./slice/dateTimeSlice";
 import categorySlice from "./slice/categorySlice";
+import colorSlice from "./slice/colorSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,5 +13,6 @@ export const store = configureStore({
     company: companySlice,
     dateTime: dateTimeSlice,
     category: categorySlice,
+    color: colorSlice,
   },
 });

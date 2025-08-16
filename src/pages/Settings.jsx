@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../layout/Sidebar';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrency } from '../slice/currencySlice';
 import { setCompanyName } from '../slice/companySlice';
-import { setDateTimeFormat } from '../slice/dateTimeSlice';
+import { setDateTimeFormat } from '../slice/dateTimeSlice'; // Corrected import
+import { addCategory, removeCategory, updateCategory } from '../slice/categorySlice'; // Corrected import
+import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 
 const currencies = [
   { symbol: '$', code: 'USD' },
@@ -30,6 +32,11 @@ const Settings = () => {
   const selectedCurrency = useSelector((state) => state.currency.value);
   const companyName = useSelector((state) => state.company.value);
   const selectedDateTimeFormat = useSelector((state) => state.dateTime.value);
+  const categories = useSelector((state) => state.category.value);
+
+  const [newCategory, setNewCategory] = useState('');
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editedCategoryName, setEditedCategoryName] = useState('');
 
   const handleCurrencyChange = (e) => {
     const currency = currencies.find(c => c.code === e.target.value);
@@ -50,6 +57,35 @@ const Settings = () => {
   const handleTimeFormatChange = (e) => {
     const newFormat = e.target.value;
     dispatch(setDateTimeFormat({ ...selectedDateTimeFormat, timeFormat: newFormat }));
+  };
+
+  const handleAddCategory = () => {
+    if (newCategory.trim() !== '' && !categories.includes(newCategory.trim())) {
+      dispatch(addCategory(newCategory.trim()));
+      setNewCategory('');
+    }
+  };
+
+  const handleRemoveCategory = (categoryToRemove) => {
+    dispatch(removeCategory(categoryToRemove));
+  };
+
+  const handleEditCategory = (category) => {
+    setEditingCategory(category);
+    setEditedCategoryName(category);
+  };
+
+  const handleSaveCategory = () => {
+    if (editedCategoryName.trim() !== '' && editedCategoryName.trim() !== editingCategory) {
+      dispatch(updateCategory({ oldCategory: editingCategory, newCategory: editedCategoryName.trim() }));
+      setEditingCategory(null);
+      setEditedCategoryName('');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCategory(null);
+    setEditedCategoryName('');
   };
 
   return (
@@ -120,6 +156,75 @@ const Settings = () => {
               </select>
             </div>
           </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md mt-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Manage Categories</h2>
+          <div className="flex mb-4">
+            <input
+              type="text"
+              placeholder="New Category Name"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              className="flex-grow border border-gray-300 rounded-l-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button
+              onClick={handleAddCategory}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-r-lg hover:bg-indigo-700 flex items-center"
+            >
+              <FiPlus className="mr-2" /> Add
+            </button>
+          </div>
+
+          <ul className="space-y-2">
+            {categories.map((category, index) => (
+              <li key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                {editingCategory === category ? (
+                  <input
+                    type="text"
+                    value={editedCategoryName}
+                    onChange={(e) => setEditedCategoryName(e.target.value)}
+                    className="flex-grow border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                ) : (
+                  <span className="text-gray-700 font-medium">{category}</span>
+                )}
+                <div className="flex space-x-2">
+                  {editingCategory === category ? (
+                    <>
+                      <button
+                        onClick={handleSaveCategory}
+                        className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="text-gray-600 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleEditCategory(category)}
+                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100"
+                      >
+                        <FiEdit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveCategory(category)}
+                        className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100"
+                      >
+                        <FiTrash2 size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </Sidebar>

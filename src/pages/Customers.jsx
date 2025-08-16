@@ -54,7 +54,7 @@ const Customers = () => {
       const customerBookings = bookings.filter(b => b.customerId === customer.id);
       const totalSpent = customerBookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0);
       const totalBookings = customerBookings.length;
-      const activeBookings = customerBookings.filter(b => b.status === 'Upcoming' || b.status === 'Ongoing').length;
+      const activeBookings = customerBookings.filter(b => b.status !== 'Completed').length;
       const totalOutstanding = customerBookings.reduce((acc, b) => acc + (b.dueAmount > 0 ? b.dueAmount : 0), 0);
 
       return {
@@ -104,6 +104,11 @@ const Customers = () => {
   };
 
   const handleDeleteCustomer = async (customer) => {
+    if (customer.totalBookings > 0) {
+      alert("Cannot delete a customer with existing bookings. Please delete their bookings first.");
+      return;
+    }
+
     if (window.confirm(`Are you sure you want to delete ${customer.name}?`)) {
       try {
         const customerRef = ref(db, `users/${userInfo.uid}/customers/${customer.id}`);
@@ -126,6 +131,16 @@ const Customers = () => {
           </div>
           
           <div className="flex items-center space-x-3">
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search customers..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
             <button
               onClick={handleOpenAddModal}
               className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium"
@@ -164,6 +179,10 @@ const Customers = () => {
         isOpen={isInfoModalOpen}
         customer={selectedCustomer} 
         onClose={handleCloseInfoModal} 
+        onEdit={() => {
+          handleCloseInfoModal();
+          handleEditCustomer(selectedCustomer);
+        }}
       />
       
       <CustomerHistoryPopup 

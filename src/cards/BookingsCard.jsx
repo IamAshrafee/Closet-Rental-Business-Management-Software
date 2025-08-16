@@ -56,7 +56,8 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
     advances = [],
     deliveryCharge = 0,
     otherCharges = 0,
-    status
+    status,
+    createdAt
   } = booking;
 
   const totalRent = useMemo(() => 
@@ -104,6 +105,32 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
       default:
         return date.toLocaleDateString(dateTimeFormat.locale);
     }
+  };
+
+  const formatTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    let hours = date.getHours();
+    let minutes = date.getMinutes();
+    let ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    const strTime = hours + ':' + minutes + ' ' + ampm;
+
+    switch (dateTimeFormat.timeFormat) {
+        case 'hh:mm A':
+            return strTime;
+        case 'HH:mm':
+            return `${date.getHours().toString().padStart(2, '0')}:${minutes}`;
+        default:
+            return date.toLocaleTimeString(dateTimeFormat.locale);
+    }
+  };
+
+  const formatDateTime = (dateString) => {
+      if (!dateString) return 'N/A';
+      return `${formatDate(dateString)} ${formatTime(dateString)}`;
   };
 
   const handleStatusChange = (e) => {
@@ -199,6 +226,16 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
                 </div>
               </div>
             </div>
+
+            {/* Created At */}
+            {createdAt && (
+              <div className="mb-4">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">Booking Created</h4>
+                <p className="text-sm text-gray-700">
+                  {formatDateTime(createdAt)}
+                </p>
+              </div>
+            )}
 
             {/* Notes */}
             {notes && (

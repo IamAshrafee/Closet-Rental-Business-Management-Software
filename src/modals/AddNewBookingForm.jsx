@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiPlus, FiTrash2, FiUser, FiBox, FiCalendar, FiDollarSign, FiFileText, FiChevronDown, FiCheck, FiInfo } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getDatabase, ref, onValue, push, set, update } from 'firebase/database';
+import { getDatabase, ref, onValue, push, set, update, get } from 'firebase/database';
 import { useSelector } from 'react-redux';
 
 // Reusable UI Components
@@ -121,10 +121,14 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
-    if (booking) {
-      setBookingDetails(booking);
+    if (isOpen) {
+      if (booking) {
+        setBookingDetails(booking);
+      } else {
+        handleReset();
+      }
     }
-  }, [booking]);
+  }, [isOpen, booking]);
 
   useEffect(() => {
     if (userInfo) {
@@ -346,8 +350,10 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
         const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
         const newBookingRef = push(bookingsRef);
         await set(newBookingRef, dataToSave);
-        setAlert({ show: true, type: 'success', message: 'Booking updated successfully!' });
+        setAlert({ show: true, type: 'success', message: 'Booking created successfully!' });
       }
+
+      await updateCustomerStats(bookingDetails.customerId);
       
       // Close form after a delay
       setTimeout(() => {
@@ -358,6 +364,27 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const updateCustomerStats = async (customerId) => {
+    const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
+    const snapshot = await get(bookingsRef);
+    const allBookings = snapshot.val() || {};
+
+    const customerBookings = Object.values(allBookings).filter(b => b.customerId === customerId);
+
+    const totalSpent = customerBookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0);
+    const totalBookings = customerBookings.length;
+    const totalOutstanding = customerBookings.reduce((acc, b) => acc + (b.dueAmount > 0 ? b.dueAmount : 0), 0);
+    const activeBookings = customerBookings.filter(b => b.status !== 'Completed').length;
+
+    const customerRef = ref(db, `users/${userInfo.uid}/customers/${customerId}`);
+    await update(customerRef, {
+      totalSpent,
+      totalBookings,
+      totalOutstanding,
+      activeBookings
+    });
   };
 
   // Reset form

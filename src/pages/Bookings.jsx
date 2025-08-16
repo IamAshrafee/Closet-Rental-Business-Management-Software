@@ -4,7 +4,7 @@ import AddNewBookingForm from "../modals/AddNewBookingForm";
 import BookingsCard from "../cards/BookingsCard";
 import BookingInformationPopup from "../modals/BookingInformationPopup";
 import { useSelector } from "react-redux";
-import { getDatabase, ref, onValue, remove, update } from "firebase/database";
+import { getDatabase, ref, onValue, remove, update, get } from "firebase/database";
 import { FiPlus, FiSearch, FiCalendar, FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,6 +17,7 @@ const Bookings = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("All");
+  const [searchCategory, setSearchCategory] = useState("All");
   
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
@@ -50,16 +51,26 @@ const Bookings = () => {
       
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const customer = customers.find(c => c.id === booking.customerId);
-        const customerName = customer?.name.toLowerCase() || '';
-        const customerPhone = customer?.phone || '';
-        const bookingId = booking.id.toLowerCase();
-        
-        return (
-          customerName.includes(query) ||
-          bookingId.includes(query) ||
-          customerPhone.includes(query)
-        );
+        const customer = customers.find((c) => c.id === booking.customerId);
+
+        switch (searchCategory) {
+          case "Name":
+            return customer?.name.toLowerCase().includes(query) || false;
+          case "Phone":
+            return customer?.phone.includes(query) || false;
+          case "Booking ID":
+            return booking.id.toLowerCase().includes(query);
+          case "All":
+          default:
+            const customerName = customer?.name.toLowerCase() || "";
+            const customerPhone = customer?.phone || "";
+            const bookingId = booking.id.toLowerCase();
+            return (
+              customerName.includes(query) ||
+              bookingId.includes(query) ||
+              customerPhone.includes(query)
+            );
+        }
       }
       
       return true;
@@ -86,6 +97,7 @@ const Bookings = () => {
       try {
         const bookingRef = ref(db, `users/${userInfo.uid}/bookings/${booking.id}`);
         await remove(bookingRef);
+        await updateCustomerStats(booking.customerId);
       } catch (error) {
         console.error("Error deleting booking:", error);
       }
@@ -97,10 +109,32 @@ const Bookings = () => {
       try {
         const bookingRef = ref(db, `users/${userInfo.uid}/bookings/${booking.id}`);
         await update(bookingRef, { status: newStatus });
+        await updateCustomerStats(booking.customerId);
       } catch (error) {
         console.error("Error updating booking status:", error);
       }
     }
+  };
+
+  const updateCustomerStats = async (customerId) => {
+    const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
+    const snapshot = await get(bookingsRef);
+    const allBookings = snapshot.val() || {};
+
+    const customerBookings = Object.values(allBookings).filter(b => b.customerId === customerId);
+
+    const totalSpent = customerBookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0);
+    const totalBookings = customerBookings.length;
+    const totalOutstanding = customerBookings.reduce((acc, b) => acc + (b.dueAmount > 0 ? b.dueAmount : 0), 0);
+    const activeBookings = customerBookings.filter(b => b.status !== 'Completed').length;
+
+    const customerRef = ref(db, `users/${userInfo.uid}/customers/${customerId}`);
+    await update(customerRef, {
+      totalSpent,
+      totalBookings,
+      totalOutstanding,
+      activeBookings
+    });
   };
 
   const toggleSearch = () => {
@@ -111,65 +145,56 @@ const Bookings = () => {
   return (
     <Sidebar>
       <div className="flex flex-col h-full">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 px-4 md:px-0">
-          <div className="mb-4 md:mb-0">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Bookings</h1>
             <p className="text-gray-500 mt-1 text-sm md:text-base">
               {filteredBookings.length} {filteredBookings.length === 1 ? 'booking' : 'bookings'} found
             </p>
           </div>
           
-          <div className="flex items-center space-x-3 w-full md:w-auto">
-            {isSearching ? (
-              <motion.div 
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: '100%' }}
-                className="relative flex-grow"
-              >
+          <div className="w-full md:w-auto flex flex-col md:flex-row items-start md:items-center gap-2">
+            <div className="w-full md:w-auto flex items-center gap-2">
+              <div className="relative flex-grow">
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search bookings..."
+                  placeholder="Search..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
                 />
-                <FiSearch className="absolute left-3 top-3 text-gray-400" />
-                <button 
-                  onClick={toggleSearch}
-                  className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
-                >
-                  <FiX size={20} />
-                </button>
-              </motion.div>
-            ) : (
-              <>
-                <button
-                  onClick={toggleSearch}
-                  className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 text-gray-600"
-                  aria-label="Search bookings"
-                >
-                  <FiSearch size={20} />
-                </button>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="All">All Statuses</option>
-                  <option value="Waiting for Delivery">Waiting for Delivery</option>
-                  <option value="Waiting for Return">Waiting for Return</option>
-                  <option value="Completed">Completed</option>
-                </select>
-                <button
-                  onClick={handleOpenAddModal}
-                  className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium"
-                >
-                  <FiPlus className="mr-2" size={18} />
-                  <span>Add Booking</span>
-                </button>
-              </>
-            )}
+              </div>
+              <select
+                value={searchCategory}
+                onChange={(e) => setSearchCategory(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="All">All</option>
+                <option value="Name">Name</option>
+                <option value="Phone">Phone</option>
+                <option value="Booking ID">Booking ID</option>
+              </select>
+            </div>
+            <div className="w-full md:w-auto flex items-center gap-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="All">All Statuses</option>
+                <option value="Waiting for Delivery">Waiting for Delivery</option>
+                <option value="Waiting for Return">Waiting for Return</option>
+                <option value="Completed">Completed</option>
+              </select>
+              <button
+                onClick={handleOpenAddModal}
+                className="w-full md:w-auto flex items-center justify-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium whitespace-nowrap"
+              >
+                <FiPlus className="mr-2" size={18} />
+                <span>Add Booking</span>
+              </button>
+            </div>
           </div>
         </div>
 

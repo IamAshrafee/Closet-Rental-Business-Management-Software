@@ -24,7 +24,7 @@ const InfoLine = ({ icon, label, value, className = '', iconClass = '' }) => (
       {icon}
     </div>
     <span className="ml-2 font-medium text-gray-500">{label}:</span>
-    <span className="ml-2 text-gray-800 truncate">{value}</span>
+    <span className="ml-2 text-gray-800">{value}</span>
   </div>
 );
 
@@ -127,7 +127,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
         </div>
 
         {/* Quick Info */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="flex flex-col sm:flex-row sm:justify-between gap-2 mb-3">
           <InfoLine 
             icon={<FiTruck size={14} />} 
             label="Delivery" 

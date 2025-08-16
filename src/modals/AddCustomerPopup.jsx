@@ -5,7 +5,7 @@ import { getDatabase, ref, push, set, update } from 'firebase/database';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
+const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -19,7 +19,8 @@ const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [suggestions, setSuggestions] = useState([]);
+
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
@@ -52,6 +53,7 @@ const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
         });
       }
       setErrors({});
+      setSuggestions([]);
     }
   }, [customer, isOpen]);
 
@@ -63,7 +65,13 @@ const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
     if (formData.altPhone && !/^\d+$/.test(formData.altPhone)) newErrors.altPhone = 'Invalid phone number';
     if (formData.parentNidType && !formData.parentNid) newErrors.parentNid = 'Parent NID is required when type is selected';
     if (!formData.address.trim()) newErrors.address = 'Address is required';
-    
+
+    // Check for duplicate phone number
+    if (customers && customers.some(c => c.phone === formData.phone && c.id !== (customer && customer.id))) {
+      newErrors.phone = 'A customer with this phone number already exists.';
+    }
+
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -71,6 +79,21 @@ const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+
+    if (name === 'name' || name === 'phone') {
+      if (value.trim() === '') {
+        setSuggestions([]);
+      } else {
+        const filteredSuggestions = customers.filter(c => {
+          const nameMatch = c.name && c.name.toLowerCase().includes(value.toLowerCase());
+          const phoneMatch = c.phone && c.phone.includes(value);
+          return nameMatch || phoneMatch;
+        });
+        setSuggestions(filteredSuggestions);
+      }
+    }
+
+
     // Clear error when field is edited
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -87,7 +110,7 @@ const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    
+
     setIsSubmitting(true);
     try {
       const customerData = {
@@ -103,7 +126,7 @@ const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
         // Add new customer
         const customersRef = ref(db, `users/${userInfo.uid}/customers`);
         const newCustomerRef = push(customersRef);
-        await set(newCustomerRef, { 
+        await set(newCustomerRef, {
           ...customerData,
           createdAt: new Date().toISOString(),
           totalSpent: 0,
@@ -132,7 +155,7 @@ const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
         className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4"
         onClick={onClose}
       >
-        <motion.form 
+        <motion.form
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -20, opacity: 0 }}
@@ -150,9 +173,9 @@ const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
                 {customer ? 'Edit Customer' : 'Add New Customer'}
               </h2>
             </div>
-            <button 
+            <button
               type="button"
-              onClick={onClose} 
+              onClick={onClose}
               className="text-gray-500 hover:text-gray-800 transition-colors p-1"
               aria-label="Close form"
               disabled={isSubmitting}
@@ -211,6 +234,16 @@ const AddCustomerPopup = ({ isOpen, onClose, customer }) => {
                   {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                 </div>
               </div>
+              {suggestions.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {suggestions.map(c => (
+                    <div key={c.id} className="bg-gray-100 p-4 rounded-lg">
+                      <p className="font-bold">{c.name}</p>
+                      <p>{c.phone}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Alternative Phone Number */}

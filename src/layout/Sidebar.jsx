@@ -1,5 +1,6 @@
 import { FaUserFriends, FaSignOutAlt } from "react-icons/fa";
 import { MdInventory, MdSpaceDashboard, MdNotificationsActive } from "react-icons/md";
+import { IoMdSettings } from "react-icons/io";
 import React, { useState, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FiMenu, FiX } from "react-icons/fi";
@@ -23,6 +24,7 @@ const SidebarContent = ({ onLinkClick, activeLink, normalLink }) => {
     { path: "/customers", icon: <FaUserFriends size={20} />, label: "Customers" },
     { path: "/bookings", icon: <FaUserFriends size={20} />, label: "Bookings" },
     { path: "/reminders", icon: <MdNotificationsActive size={20} />, label: "Reminders" },
+    { path: "/settings", icon: <IoMdSettings size={20} />, label: "Settings" },
   ];
 
   return (

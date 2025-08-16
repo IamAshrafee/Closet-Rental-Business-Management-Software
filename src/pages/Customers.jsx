@@ -18,6 +18,7 @@ const Customers = () => {
   const [stockItems, setStockItems] = useState([]);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchCategory, setSearchCategory] = useState("All");
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
@@ -71,11 +72,20 @@ const Customers = () => {
   const filteredCustomers = useMemo(() => {
     if (!searchQuery) return customerStats;
     const query = searchQuery.toLowerCase();
-    return customerStats.filter(customer => 
-      customer.name?.toLowerCase().includes(query) ||
-      customer.phone?.includes(query)
-    );
-  }, [customerStats, searchQuery]);
+    return customerStats.filter((customer) => {
+      switch (searchCategory) {
+        case "Name":
+          return customer.name?.toLowerCase().includes(query) || false;
+        case "Phone":
+          return customer.phone?.includes(query) || false;
+        default:
+          return (
+            customer.name?.toLowerCase().includes(query) ||
+            customer.phone?.includes(query)
+          );
+      }
+    });
+  }, [customerStats, searchQuery, searchCategory]);
 
   const handleOpenAddModal = () => {
     setEditingCustomer(null);
@@ -130,20 +140,29 @@ const Customers = () => {
             </p>
           </div>
           
-          <div className="flex items-center space-x-3">
-            <div className="relative">
+          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-grow">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search customers..."
+                placeholder="Search..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            <select
+              value={searchCategory}
+              onChange={(e) => setSearchCategory(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="All">All</option>
+              <option value="Name">Name</option>
+              <option value="Phone">Phone</option>
+            </select>
             <button
               onClick={handleOpenAddModal}
-              className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium"
+              className="flex items-center justify-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium whitespace-nowrap"
             >
               <FiPlus className="mr-2" size={18} />
               <span>Add Customer</span>
@@ -173,6 +192,7 @@ const Customers = () => {
         isOpen={isAddModalOpen}
         onClose={handleCloseAddModal} 
         customer={editingCustomer} 
+        customers={customers}
       />
       
       <CustomerInformationPopup 

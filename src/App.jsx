@@ -11,6 +11,7 @@ import { store } from "./store";
 import { Provider } from "react-redux";
 import VerifyEmail from "./pages/VerifyEmail";
 import PrivateRoute from "./authentication/PrivateRoute";
+import Settings from "./pages/Settings";
 
 const router = createBrowserRouter([
   {
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
       {
         path: "/reminders",
         element: <Reminders />,
+      },
+      {
+        path: "/settings",
+        element: <Settings />,
       },
     ],
   },

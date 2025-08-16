@@ -434,7 +434,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center backdrop-blur-sm z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0  bg-opacity-60 flex justify-center items-center backdrop-blur-sm z-50 p-4" onClick={onClose}>
       <AnimatePresence>
         {alert.show && (
           <Alert 

@@ -52,7 +52,7 @@ const RadioGroup = ({ label, name, options, formData, handleRadioChange, classNa
   </div>
 );
 
-const AddItemsForm = ({ onClose, item }) => {
+const AddItemsForm = ({ isOpen, onClose, item }) => {
   const initialFormData = {
     name: '',
     category: '',
@@ -233,6 +233,8 @@ const AddItemsForm = ({ onClose, item }) => {
       setIsSubmitting(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>

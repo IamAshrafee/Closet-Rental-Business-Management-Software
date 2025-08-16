@@ -169,11 +169,11 @@ const Stock = () => {
       </div>
 
       {/* Modals */}
-      <AnimatePresence>
-        {isAddModalOpen && (
-          <AddItemsForm onClose={handleCloseAddModal} item={editingItem} />
-        )}
-      </AnimatePresence>
+      <AddItemsForm
+        isOpen={isAddModalOpen}
+        onClose={handleCloseAddModal}
+        item={editingItem}
+      />
 
       <AnimatePresence>
         {isInfoModalOpen && (

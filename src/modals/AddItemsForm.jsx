@@ -9,9 +9,9 @@ import Select from 'react-select';
 import CustomDatePicker from '../components/CustomDatePicker';
 
 const InputField = ({ label, name, type = 'text', required = false, placeholder = '', min, step, formData, errors, handleChange, children }) => (
-  <div className="mb-4">
+  <div class="mb-4">
     <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
-      {label} {required && <span className="text-red-500">*</span>}
+      {label} {required && <span class="text-red-500">*</span>}
     </label>
     {children || (
       <input
@@ -28,7 +28,7 @@ const InputField = ({ label, name, type = 'text', required = false, placeholder 
         }`}
       />
     )}
-    {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
+    {errors[name] && <p class="mt-1 text-sm text-red-600">{errors[name]}</p>}
   </div>
 );
 
@@ -55,7 +55,7 @@ const RadioGroup = ({ label, name, options, formData, handleRadioChange, classNa
   </div>
 );
 
-const AddItemsForm = ({ isOpen, onClose, item }) => {
+const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
   const currency = useSelector((state) => state.currency.value);
   const categories = useSelector((state) => state.category.value);
   const colors = useSelector((state) => state.color.value);
@@ -90,8 +90,54 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
   const [imageUrl, setImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [countrySuggestions, setCountrySuggestions] = useState([]);
+  const [purchaseFromSuggestions, setPurchaseFromSuggestions] = useState([]);
+  const [lengthSuggestions, setLengthSuggestions] = useState([]);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
+
+  useEffect(() => {
+    if (stockItems && stockItems.length > 0) {
+      const countryCounts = stockItems.reduce((acc, item) => {
+        if (item.itemCountry) {
+          acc[item.itemCountry] = (acc[item.itemCountry] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      const sortedCountries = Object.keys(countryCounts).sort(
+        (a, b) => countryCounts[a] - countryCounts[b]
+      );
+
+      setCountrySuggestions(sortedCountries.slice(0, 2));
+
+      const purchaseFromCounts = stockItems.reduce((acc, item) => {
+        if (item.purchaseFrom) {
+          acc[item.purchaseFrom] = (acc[item.purchaseFrom] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      const sortedPurchaseFrom = Object.keys(purchaseFromCounts).sort(
+        (a, b) => purchaseFromCounts[b] - purchaseFromCounts[a]
+      );
+
+      setPurchaseFromSuggestions(sortedPurchaseFrom.slice(0, 2));
+
+      const lengthCounts = stockItems.reduce((acc, item) => {
+        if (item.long) {
+          acc[item.long] = (acc[item.long] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      const sortedLength = Object.keys(lengthCounts).sort(
+        (a, b) => lengthCounts[b] - lengthCounts[a]
+      );
+
+      setLengthSuggestions(sortedLength.slice(0, 2));
+    }
+  }, [stockItems]);
 
   useEffect(() => {
     if (isOpen) {
@@ -197,6 +243,14 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
     }
   };
 
+  const handleCountrySuggestionClick = (country) => {
+    if (formData.itemCountry === country) {
+      setFormData(prev => ({ ...prev, itemCountry: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, itemCountry: country }));
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
@@ -298,7 +352,7 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                 {/* Category Select Field */}
                 <div className="mb-4">
                   <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                    Category <span className="text-red-500">*</span>
+                    Category <span class="text-red-500">*</span>
                   </label>
                   <select
                     id="category"
@@ -314,7 +368,7 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                       <option key={index} value={cat}>{cat}</option>
                     ))}
                   </select>
-                  {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
+                  {errors.category && <p class="mt-1 text-sm text-red-600">{errors.category}</p>}
                 </div>
                 
                 <RadioGroup
@@ -340,7 +394,34 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                   </div>
                 )}
                 
-                <InputField label="Length (optional)" name="long" formData={formData} errors={errors} handleChange={handleChange} />
+                <InputField label="Length (optional)" name="long" formData={formData} errors={errors} handleChange={handleChange}>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="long"
+                      name="long"
+                      value={formData.long}
+                      onChange={handleChange}
+                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                        errors.long ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {formData.long === '' && lengthSuggestions.length > 0 && (
+                      <div className="absolute top-1/2 right-3 -translate-y-1/2 flex gap-2">
+                        {lengthSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, long: suggestion }))}
+                            className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </InputField>
                 <div className="mb-4">
                   <label htmlFor="colors" className="block text-sm font-medium text-gray-700 mb-1">
                     Colors
@@ -357,7 +438,7 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                     }}
                     value={colors.filter(c => formData.colors.includes(c.name)).map(c => ({ value: c.name, label: c.name }))}
                   />
-                  {errors.colors && <p className="mt-1 text-sm text-red-600">{errors.colors}</p>}
+                  {errors.colors && <p class="mt-1 text-sm text-red-600">{errors.colors}</p>}
                 </div>
               </div>
 
@@ -369,8 +450,66 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                   onChange={date => handleDateChange('purchaseDate', date)} 
                   error={errors.purchaseDate} 
                 />
-                <InputField label="Purchased From" name="purchaseFrom" formData={formData} errors={errors} handleChange={handleChange} />
-                <InputField label="Item's Country" name="itemCountry" formData={formData} errors={errors} handleChange={handleChange} />
+                <InputField label="Purchased From" name="purchaseFrom" formData={formData} errors={errors} handleChange={handleChange}>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="purchaseFrom"
+                      name="purchaseFrom"
+                      value={formData.purchaseFrom}
+                      onChange={handleChange}
+                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                        errors.purchaseFrom ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {formData.purchaseFrom === '' && purchaseFromSuggestions.length > 0 && (
+                      <div className="absolute top-1/2 right-3 -translate-y-1/2 flex gap-2">
+                        {purchaseFromSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, purchaseFrom: suggestion }))}
+                            className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </InputField>
+                <div>
+                  <label htmlFor="itemCountry" className="block text-sm font-medium text-gray-700 mb-1">
+                    Item's Country
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="itemCountry"
+                      name="itemCountry"
+                      value={formData.itemCountry}
+                      onChange={handleChange}
+                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                        errors.itemCountry ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {formData.itemCountry === '' && countrySuggestions.length > 0 && (
+                      <div className="absolute top-1/2 right-3 -translate-y-1/2 flex gap-2">
+                        {countrySuggestions.map((country, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => handleCountrySuggestionClick(country)}
+                            className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300"
+                          >
+                            {country}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {errors.itemCountry && <p class="mt-1 text-sm text-red-600">{errors.itemCountry}</p>}
+                </div>
                 <InputField 
                   label={`Purchase Price (${currency.symbol})`}
                   name="purchasePrice" 
@@ -496,10 +635,10 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                     errors.target ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
-                <p className="mt-1 text-sm text-gray-500">
+                <p class="mt-1 text-sm text-gray-500">
                   How many times the item must be rented to get back the original purchase price.
                 </p>
-                {errors.target && <p className="mt-1 text-sm text-red-600">{errors.target}</p>}
+                {errors.target && <p class="mt-1 text-sm text-red-600">{errors.target}</p>}
               </div>
             </InputField>
 
@@ -550,7 +689,7 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                     <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 10MB</p>
                   </div>
                 )}
-                {errors.photo && <p className="mt-2 text-sm text-red-600">{errors.photo}</p>}
+                {errors.photo && <p class="mt-2 text-sm text-red-600">{errors.photo}</p>}
               </div>
             </div>
 

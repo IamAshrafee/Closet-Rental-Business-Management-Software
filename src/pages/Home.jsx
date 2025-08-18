@@ -318,6 +318,7 @@ const Home = () => {
       <AddItemsForm
         isOpen={isItemModalOpen}
         onClose={() => setIsItemModalOpen(false)}
+        stockItems={items}
       />
     </Sidebar>
   );

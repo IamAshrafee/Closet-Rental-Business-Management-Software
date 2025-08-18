@@ -331,6 +331,7 @@ const Stock = () => {
           isOpen={isAddModalOpen}
           onClose={handleCloseAddModal}
           item={editingItem}
+          stockItems={items}
         />
 
         <AnimatePresence>

@@ -454,7 +454,8 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
       } else {
         const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
         const newBookingRef = push(bookingsRef);
-        await set(newBookingRef, { ...dataToSave, createdAt: new Date().toISOString() });
+        const newBookingId = `B-${newBookingRef.key.slice(-6)}`;
+        await set(newBookingRef, { ...dataToSave, createdAt: new Date().toISOString(), id: newBookingId });
         setAlert({ show: true, type: 'success', message: 'Booking created successfully!' });
       }
 

@@ -38,7 +38,7 @@ const BookingItem = ({ booking, getItemDetails, currency, formatDate }) => (
         <div className="bg-blue-50 p-2 rounded-lg text-blue-600 mr-3">
           <FiCalendar size={16} />
         </div>
-        <p className="font-semibold text-gray-800">Booking #{booking.id.slice(0, 6)}</p>
+        <p className="font-semibold text-gray-800">Booking #{booking.id}</p>
       </div>
       <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
         {booking.status}

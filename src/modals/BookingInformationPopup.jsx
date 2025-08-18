@@ -177,7 +177,7 @@ const BookingInformationPopup = ({ booking, onClose }) => {
                 <span className="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center mr-3">
                   <FiHash size={16} />
                 </span>
-                Booking #{id.slice(0, 8)}
+                Booking #{id}
               </h2>
               <p className="text-xs text-gray-500 mt-1">
                 Created: {formatDateTime(createdAt)}

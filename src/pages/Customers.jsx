@@ -7,6 +7,9 @@ import CustomerHistoryPopup from "../modals/CustomerHistoryPopup";
 import { useSelector } from "react-redux";
 import { getDatabase, ref, onValue, remove } from "firebase/database";
 import { FiPlus, FiSearch } from "react-icons/fi";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+import EmptyState from "../components/EmptyState";
 
 const Customers = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -17,6 +20,7 @@ const Customers = () => {
   const [bookings, setBookings] = useState([]);
   const [stockItems, setStockItems] = useState([]);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState("All");
   const db = getDatabase();
@@ -24,10 +28,12 @@ const Customers = () => {
 
   useEffect(() => {
     if (userInfo) {
+      setIsLoading(true);
       const customersRef = ref(db, `users/${userInfo.uid}/customers`);
       const unsubscribeCustomers = onValue(customersRef, (snapshot) => {
         const data = snapshot.val();
         setCustomers(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
+        setIsLoading(false);
       });
 
       const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
@@ -170,22 +176,37 @@ const Customers = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
-          {filteredCustomers.map((customer) => (
-            <div 
-              key={customer.id} 
-              onClick={() => handleOpenInfoModal(customer)} 
-              className="cursor-pointer"
-            >
-              <CustomerCard 
-                customer={customer} 
-                onEdit={(e) => { e.stopPropagation(); handleEditCustomer(customer); }} 
-                onDelete={(e) => { e.stopPropagation(); handleDeleteCustomer(customer); }} 
-                onHistoryClick={(e) => { e.stopPropagation(); handleOpenHistoryModal(customer); }}
-              />
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
+            {[...Array(8)].map((_, index) => (
+              <Skeleton key={index} height={288} className="rounded-xl" />
+            ))}
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <EmptyState 
+            title={searchQuery ? "No matching customers found" : "You haven't added any customers yet"}
+            description={searchQuery ? "Try a different search term" : "Add your first customer to get started"}
+            buttonText="Add Customer"
+            onButtonClick={handleOpenAddModal}
+          />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
+            {filteredCustomers.map((customer) => (
+              <div 
+                key={customer.id} 
+                onClick={() => handleOpenInfoModal(customer)} 
+                className="cursor-pointer"
+              >
+                <CustomerCard 
+                  customer={customer} 
+                  onEdit={(e) => { e.stopPropagation(); handleEditCustomer(customer); }} 
+                  onDelete={(e) => { e.stopPropagation(); handleDeleteCustomer(customer); }} 
+                  onHistoryClick={(e) => { e.stopPropagation(); handleOpenHistoryModal(customer); }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <AddCustomerPopup 

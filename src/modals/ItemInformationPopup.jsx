@@ -15,9 +15,9 @@ const DetailItem = ({ icon, label, value, className = '', highlight }) => {
             </div>
             <div className="ml-2.5 flex-1 min-w-0">
                 <p className={`text-xs ${highlight ? 'text-indigo-700 font-medium' : 'text-gray-500'}`}>{label}</p>
-                <p className={`text-sm ${highlight ? 'font-semibold text-indigo-900' : 'text-gray-800'} truncate`}>
+                <div className={`text-sm ${highlight ? 'font-semibold text-indigo-900' : 'text-gray-800'} truncate`}>
                     {value}
-                </p>
+                </div>
             </div>
         </div>
     );
@@ -27,7 +27,7 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
     const currency = useSelector((state) => state.currency.value);
     const dateTimeFormat = useSelector((state) => state.dateTime.value);
     const colorsList = useSelector((state) => state.color.value); // Get colors from Redux
-    
+
     if (!item) return null;
 
     const {
@@ -54,9 +54,6 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
         description,
         photo: imageUrl,
     } = item;
-
-    // Find the corresponding color object from the Redux store
-    const selectedColor = colorsList.find(c => c.name === colors);
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -91,7 +88,7 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
     };
 
     const getAvailabilityBadge = () => {
-        const isAvailable = availability === 'Available';
+        const isAvailable = availability === 'available';
         return (
             <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
                 isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -108,14 +105,14 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
 
     return (
         <AnimatePresence>
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm  flex justify-center items-center p-4 z-50"
                 onClick={onClose}
             >
-                <motion.div 
+                <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 20, opacity: 0 }}
@@ -138,15 +135,15 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
                             </div>
                         </div>
                         <div className="flex space-x-1">
-                            <button 
+                            <button
                                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
                                 className="p-1.5 rounded-md hover:bg-indigo-50 transition-colors text-indigo-600"
                                 aria-label="Edit"
                             >
                                 <FiEdit2 size={16} />
                             </button>
-                            <button 
-                                onClick={onClose} 
+                            <button
+                                onClick={onClose}
                                 className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-gray-500"
                                 aria-label="Close"
                             >
@@ -161,9 +158,9 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
                         {imageUrl && (
                             <div className="bg-gray-50 border-b p-3">
                                 <div className="relative aspect-square bg-white rounded-md overflow-hidden">
-                                    <img 
-                                        src={imageUrl} 
-                                        alt={name} 
+                                    <img
+                                        src={imageUrl}
+                                        alt={name}
                                         className="absolute inset-0 w-full h-full object-contain"
                                         loading="lazy"
                                     />
@@ -174,79 +171,86 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
                         <div className="p-4 space-y-4">
                             {/* Pricing Section (Most Important) */}
                             <div>
-                                <DetailItem 
-                                    icon={<FiDollarSign />} 
-                                    label="RENTAL PRICE" 
-                                    value={getRentPrice()} 
+                                <DetailItem
+                                    icon={<FiDollarSign />}
+                                    label="RENTAL PRICE"
+                                    value={getRentPrice()}
                                     highlight
                                 />
-                                <DetailItem 
-                                    icon={<FiDollarSign />} 
-                                    label="Purchase Price" 
-                                    value={`${currency.symbol}${purchasePrice}`} 
+                                <DetailItem
+                                    icon={<FiDollarSign />}
+                                    label="Purchase Price"
+                                    value={`${currency.symbol}${purchasePrice}`}
                                 />
                             </div>
 
                             {/* Item Details */}
                             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                                <DetailItem 
-                                    icon={<FiMaximize2 />} 
-                                    label="Size" 
-                                    value={sizeOption === 'fixed' ? sizeValue : sizeOption === 'range' ? `${sizeFrom}-${sizeTo}` : 'Free size'} 
+                                <DetailItem
+                                    icon={<FiMaximize2 />}
+                                    label="Size"
+                                    value={sizeOption === 'fixed' ? sizeValue : sizeOption === 'range' ? `${sizeFrom}-${sizeTo}` : 'Free size'}
                                 />
                                 {long && (
-                                    <DetailItem 
-                                        icon={<FiMaximize2 />} 
-                                        label="Length" 
-                                        value={long} 
+                                    <DetailItem
+                                        icon={<FiMaximize2 />}
+                                        label="Length"
+                                        value={long}
                                     />
                                 )}
-                                {colors && (
-                                    <DetailItem 
-                                        icon={<FiDroplet />} 
-                                        label="Color" 
+                                {colors && Array.isArray(colors) && colors.length > 0 && (
+                                    <DetailItem
+                                        icon={<FiDroplet />}
+                                        label="Colors"
                                         value={
-                                            <div className="flex items-center">
-                                                <div 
-                                                    className="w-3 h-3 rounded-full mr-1.5 border border-gray-200" 
-                                                    style={{ backgroundColor: selectedColor ? selectedColor.hex : colors }}
-                                                />
-                                                <span>{selectedColor ? selectedColor.name : colors}</span>
+                                            <div className="flex flex-wrap gap-2">
+                                                {colors.map((colorName, index) => {
+                                                    const color = colorsList.find(c => c.name === colorName);
+                                                    return (
+                                                        <div key={index} className="flex items-center bg-gray-100 px-2 py-1 rounded-md">
+                                                            <div
+                                                                className="w-3 h-3 rounded-full mr-1.5 border border-gray-300"
+                                                                style={{ backgroundColor: color ? color.hex : '#ffffff' }}
+                                                            />
+                                                            <span className="text-xs text-gray-700">{colorName}</span>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
-                                        } 
+                                        }
                                     />
                                 )}
-                                <DetailItem 
-                                    icon={<FiInfo />} 
-                                    label="Condition" 
-                                    value={itemCondition} 
+                                <DetailItem
+                                    icon={<FiInfo />}
+                                    label="Condition"
+                                    value={itemCondition}
                                 />
                                 {target && (
-                                    <DetailItem 
-                                        icon={<FiTrendingUp />} 
-                                        label="Target" 
-                                        value={target} 
+                                    <DetailItem
+                                        icon={<FiTrendingUp />}
+                                        label="Target"
+                                        value={target}
                                     />
                                 )}
                             </div>
 
                             {/* Purchase Info */}
                             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                                <DetailItem 
-                                    icon={<FiCalendar />} 
-                                    label="Purchase Date" 
-                                    value={formatDate(purchaseDate)} 
+                                <DetailItem
+                                    icon={<FiCalendar />}
+                                    label="Purchase Date"
+                                    value={formatDate(purchaseDate)}
                                 />
-                                <DetailItem 
-                                    icon={<FiMapPin />} 
-                                    label="Purchased From" 
-                                    value={purchaseFrom} 
+                                <DetailItem
+                                    icon={<FiMapPin />}
+                                    label="Purchased From"
+                                    value={purchaseFrom}
                                 />
                                 {itemCountry && (
-                                    <DetailItem 
-                                        icon={<FiMapPin />} 
-                                        label="Origin" 
-                                        value={itemCountry} 
+                                    <DetailItem
+                                        icon={<FiMapPin />}
+                                        label="Origin"
+                                        value={itemCountry}
                                     />
                                 )}
                             </div>
@@ -254,10 +258,10 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
                             {/* Description (Least Important) */}
                             {description && (
                                 <div className="pt-2">
-                                    <DetailItem 
-                                        icon={<FiFileText />} 
-                                        label="Notes" 
-                                        value={<p className="text-gray-700 text-sm whitespace-pre-line">{description}</p>} 
+                                    <DetailItem
+                                        icon={<FiFileText />}
+                                        label="Notes"
+                                        value={<p className="text-gray-700 text-sm whitespace-pre-line">{description}</p>}
                                     />
                                 </div>
                             )}
@@ -266,10 +270,10 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
 
                     {/* Footer */}
                     <div className="flex justify-end p-3 border-t bg-white sticky bottom-0">
-                        <motion.button 
+                        <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={onClose} 
+                            onClick={onClose}
                             className="bg-indigo-600 text-white px-4 py-1.5 rounded-md hover:bg-indigo-700 transition-colors font-medium text-sm"
                         >
                             Close

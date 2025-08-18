@@ -148,7 +148,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
           const customersList = Object.keys(data).map((key) => ({
             id: key,
             ...data[key],
-          }));
+          })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           setCustomers(customersList);
         } else {
           setCustomers([]);
@@ -193,7 +193,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
     return stockItems.filter(item => {
       // Category and Color filters
       if (categoryFilter && item.category !== categoryFilter.value) return false;
-      if (colorFilter && item.colors !== colorFilter.value) return false;
+      if (colorFilter && (!Array.isArray(item.colors) || !item.colors.includes(colorFilter.value))) return false;
 
       // Availability filter
       if (showAvailableOnly && newBookingStart && newBookingEnd) {
@@ -454,7 +454,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
       } else {
         const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
         const newBookingRef = push(bookingsRef);
-        await set(newBookingRef, dataToSave);
+        await set(newBookingRef, { ...dataToSave, createdAt: new Date().toISOString() });
         setAlert({ show: true, type: 'success', message: 'Booking created successfully!' });
       }
 

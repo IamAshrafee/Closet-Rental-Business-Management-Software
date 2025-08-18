@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
+import EmptyState from '../components/EmptyState';
 
 const UpcomingReturnsCard = ({ bookings, onReturnClick, formatDate }) => {
   const currency = useSelector((state) => state.currency.value);
@@ -94,17 +95,10 @@ const UpcomingReturnsCard = ({ bookings, onReturnClick, formatDate }) => {
               ))}
             </motion.ul>
           ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center h-full text-center py-10"
-            >
-              <div className="bg-gray-100 p-4 rounded-full mb-4">
-                <FiRepeat size={32} className="text-gray-400" />
-              </div>
-              <h4 className="text-lg font-medium text-gray-700 mb-1">No upcoming returns</h4>
-              <p className="text-gray-500">All items have been returned</p>
-            </motion.div>
+            <EmptyState
+              title="No upcoming returns"
+              description="All items have been returned"
+            />
           )}
         </AnimatePresence>
       </div>

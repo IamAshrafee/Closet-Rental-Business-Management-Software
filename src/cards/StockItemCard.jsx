@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { 
-  FiEdit, 
-  FiTrash2, 
-  FiDollarSign, 
-  FiPackage, 
-  FiEye, 
+import {
+  FiEdit,
+  FiTrash2,
+  FiDollarSign,
+  FiPackage,
+  FiEye,
   FiCalendar,
   FiCheckCircle,
   FiXCircle,
@@ -15,12 +15,12 @@ import { motion } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import ActiveBookingsPopup from '../modals/ActiveBookingsPopup';
 
-const StockItemCard = ({ 
-  item, 
-  onClick, 
-  onEdit, 
-  onDelete, 
-  onViewBookingDetails 
+const StockItemCard = ({
+  item,
+  onClick,
+  onEdit,
+  onDelete,
+  onViewBookingDetails
 }) => {
   const currency = useSelector((state) => state.currency.value);
   const colorsList = useSelector((state) => state.color.value);
@@ -59,11 +59,6 @@ const StockItemCard = ({
     rating,
     isFeatured
   } = item;
-
-  const selectedColor = useMemo(
-    () => colorsList.find(c => c.name === colors),
-    [colors, colorsList]
-  );
 
   const progress = useMemo(
     () => (target ? Math.min((rented / target) * 100, 100) : 0),
@@ -141,9 +136,9 @@ const StockItemCard = ({
         {/* Image Section */}
         <div className="relative w-28 h-full flex-shrink-0">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 z-[1]"></div>
-          <img 
+          <img
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            src={photo || '/assets/default-item-image.svg'} 
+            src={photo || '/assets/default-item-image.svg'}
             alt={name}
             loading="lazy"
             onError={(e) => {
@@ -157,7 +152,7 @@ const StockItemCard = ({
             </span>
           </div>
         </div>
-        
+
         {/* Content Section */}
         <div className="p-4 flex flex-col flex-grow overflow-hidden">
           {/* Header */}
@@ -166,7 +161,7 @@ const StockItemCard = ({
               {name}
             </h3>
             <div className="flex space-x-1">
-              <motion.button 
+              <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => { e.stopPropagation(); onEdit(e); }}
@@ -175,7 +170,7 @@ const StockItemCard = ({
               >
                 <FiEdit size={14} />
               </motion.button>
-              <motion.button 
+              <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => { e.stopPropagation(); onDelete(e); }}
@@ -186,15 +181,15 @@ const StockItemCard = ({
               </motion.button>
             </div>
           </div>
-          
+
           {/* Rating (if exists) */}
           {rating && (
             <div className="flex items-center mb-1">
               <div className="flex text-amber-400">
                 {[...Array(5)].map((_, i) => (
-                  <FiStar 
-                    key={i} 
-                    size={12} 
+                  <FiStar
+                    key={i}
+                    size={12}
                     fill={i < Math.round(rating) ? 'currentColor' : 'none'}
                   />
                 ))}
@@ -202,7 +197,7 @@ const StockItemCard = ({
               <span className="text-xs text-gray-500 ml-1">{rating.toFixed(1)}</span>
             </div>
           )}
-          
+
           {/* Price */}
           <div className="flex items-center mb-2">
             <div className="bg-indigo-100 p-1 rounded-lg mr-2">
@@ -215,30 +210,30 @@ const StockItemCard = ({
               </span>
             )}
           </div>
-          
+
           {/* Details Row */}
           <div className="flex items-center space-x-3 text-xs text-gray-600 mb-2">
             <div className="flex items-center bg-gray-100/70 px-2 py-1 rounded-lg">
               <FiPackage className="mr-1 text-indigo-500" size={12} />
               <span>{getSize()}</span>
             </div>
-            {colors && (
-              <div className="flex items-center bg-gray-100/70 px-2 py-1 rounded-lg">
-                <div 
-                  className="w-3 h-3 rounded-full mr-1 border border-gray-300" 
-                  style={{ 
-                    backgroundColor: selectedColor ? selectedColor.hex : colors,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                  }}
-                  title={selectedColor ? selectedColor.name : colors}
-                />
-                <span className="truncate max-w-[80px]" title={selectedColor ? selectedColor.name : colors}>
-                  {selectedColor ? selectedColor.name : colors}
-                </span>
+            {colors && Array.isArray(colors) && colors.length > 0 && (
+              <div className="flex items-center space-x-1">
+                {colors.map((colorName, index) => {
+                  const color = colorsList.find(c => c.name === colorName);
+                  return (
+                    <div
+                      key={index}
+                      className="w-4 h-4 rounded-full border border-gray-300"
+                      style={{ backgroundColor: color ? color.hex : '#ffffff' }}
+                      title={colorName}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
-          
+
           {/* Active Bookings */}
           {activeBookingsCount > 0 && (
             <div className="flex items-center justify-between text-xs text-blue-600 mt-1 mb-2">
@@ -246,8 +241,8 @@ const StockItemCard = ({
                 <FiEye className="mr-1.5" />
                 <span>{activeBookingsCount} Active Booking{activeBookingsCount !== 1 ? 's' : ''}</span>
               </div>
-              <motion.button 
-                onClick={handleViewBookings} 
+              <motion.button
+                onClick={handleViewBookings}
                 className="font-medium text-indigo-600 hover:text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -256,7 +251,7 @@ const StockItemCard = ({
               </motion.button>
             </div>
           )}
-          
+
           {/* Progress Section */}
           {target && (
             <div className="mt-auto">
@@ -270,8 +265,8 @@ const StockItemCard = ({
                 </div>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                <motion.div 
-                  className="bg-gradient-to-r from-indigo-400 to-indigo-600 h-2 rounded-full" 
+                <motion.div
+                  className="bg-gradient-to-r from-indigo-400 to-indigo-600 h-2 rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.8, type: 'spring' }}
@@ -282,7 +277,7 @@ const StockItemCard = ({
         </div>
       </motion.div>
 
-      <ActiveBookingsPopup 
+      <ActiveBookingsPopup
         isOpen={isBookingPopupOpen}
         onClose={() => setBookingPopupOpen(false)}
         bookings={activeBookings}

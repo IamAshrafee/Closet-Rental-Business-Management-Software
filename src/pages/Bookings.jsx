@@ -7,6 +7,9 @@ import { useSelector } from "react-redux";
 import { getDatabase, ref, onValue, remove, update, get } from "firebase/database";
 import { FiPlus, FiSearch, FiCalendar, FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+import EmptyState from "../components/EmptyState";
 
 const Bookings = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -14,6 +17,7 @@ const Bookings = () => {
   const [bookings, setBookings] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [editingBooking, setEditingBooking] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("All");
@@ -25,10 +29,12 @@ const Bookings = () => {
   useEffect(() => {
     if (!userInfo) return;
 
+    setIsLoading(true);
     const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
     const unsubscribeBookings = onValue(bookingsRef, (snapshot) => {
       const data = snapshot.val();
       setBookings(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
+      setIsLoading(false);
     });
 
     const customersRef = ref(db, `users/${userInfo.uid}/customers`);
@@ -44,37 +50,56 @@ const Bookings = () => {
   }, [db, userInfo]);
 
   const filteredBookings = useMemo(() => {
-    return bookings.filter(booking => {
-      if (statusFilter !== "All" && booking.status !== statusFilter) {
-        return false;
-      }
-      
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const customer = customers.find((c) => c.id === booking.customerId);
+    const statusOrder = {
+      'Waiting for Delivery': 1,
+      'Waiting for Return': 2,
+      'Completed': 3,
+    };
 
-        switch (searchCategory) {
-          case "Name":
-            return customer?.name.toLowerCase().includes(query) || false;
-          case "Phone":
-            return customer?.phone.includes(query) || false;
-          case "Booking ID":
-            return booking.id.toLowerCase().includes(query);
-          case "All":
-          default:
-            const customerName = customer?.name.toLowerCase() || "";
-            const customerPhone = customer?.phone || "";
-            const bookingId = booking.id.toLowerCase();
-            return (
-              customerName.includes(query) ||
-              bookingId.includes(query) ||
-              customerPhone.includes(query)
-            );
+    return bookings
+      .filter(booking => {
+        if (statusFilter !== "All" && booking.status !== statusFilter) {
+          return false;
         }
-      }
-      
-      return true;
-    });
+        
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          const customer = customers.find((c) => c.id === booking.customerId);
+
+          switch (searchCategory) {
+            case "Name":
+              return customer?.name.toLowerCase().includes(query) || false;
+            case "Phone":
+              return customer?.phone.includes(query) || false;
+            case "Booking ID":
+              return booking.id.toLowerCase().includes(query);
+            case "All":
+            default:
+              const customerName = customer?.name.toLowerCase() || "";
+              const customerPhone = customer?.phone || "";
+              const bookingId = booking.id.toLowerCase();
+              return (
+                customerName.includes(query) ||
+                bookingId.includes(query) ||
+                customerPhone.includes(query)
+              );
+          }
+        }
+        
+        return true;
+      })
+      .sort((a, b) => {
+        const statusA = statusOrder[a.status] || 99;
+        const statusB = statusOrder[b.status] || 99;
+
+        if (statusA !== statusB) {
+          return statusA - statusB;
+        }
+
+        const dateA = a.createdAt ? new Date(a.createdAt) : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt) : 0;
+        return dateB - dateA;
+      });
   }, [bookings, searchQuery, statusFilter, customers]);
 
   const handleOpenAddModal = () => {
@@ -198,7 +223,13 @@ const Bookings = () => {
           </div>
         </div>
 
-        {filteredBookings.length > 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
+            {[...Array(8)].map((_, index) => (
+              <Skeleton key={index} height={230} className="rounded-xl" />
+            ))}
+          </div>
+        ) : filteredBookings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
             <AnimatePresence>
               {filteredBookings.map((booking) => (
@@ -222,32 +253,18 @@ const Bookings = () => {
             </AnimatePresence>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center flex-grow text-center py-12 px-4">
-            <div className="max-w-md">
-              <div className="bg-indigo-100 p-5 rounded-full inline-block mb-4">
-                <FiCalendar size={40} className="text-indigo-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                {searchQuery || statusFilter !== "All" ? 'No bookings found' : 'No bookings yet'}
-              </h3>
-              <p className="text-gray-500 mb-6">
-                {searchQuery 
-                  ? 'Try a different search term' 
-                  : statusFilter !== "All"
-                    ? `No bookings with status "${statusFilter}"`
-                    : 'Get started by adding your first booking'}
-              </p>
-              {!searchQuery && statusFilter === "All" && (
-                <button
-                  onClick={handleOpenAddModal}
-                  className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 font-medium"
-                >
-                  <FiPlus className="inline mr-2" />
-                  Add Booking
-                </button>
-              )}
-            </div>
-          </div>
+          <EmptyState 
+            title={searchQuery || statusFilter !== "All" ? 'No bookings found' : 'No bookings yet'}
+            description={
+              searchQuery 
+                ? 'Try a different search term' 
+                : statusFilter !== "All"
+                  ? `No bookings with status "${statusFilter}"`
+                  : 'Get started by adding your first booking'
+            }
+            buttonText="Add Booking"
+            onButtonClick={handleOpenAddModal}
+          />
         )}
       </div>
 

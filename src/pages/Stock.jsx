@@ -12,6 +12,19 @@ import { FiPlus, FiSearch, FiFilter, FiRefreshCw } from "react-icons/fi";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
+const getRepresentativePrice = (item) => {
+  switch (item.rentOption) {
+    case 'fixed':
+      return Number(item.rentValue) || 0;
+    case 'per-day':
+      return Number(item.rentPerDay) || 0;
+    case 'range':
+      return Number(item.rentFrom) || 0;
+    default:
+      return 0;
+  }
+};
+
 const Stock = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
@@ -25,6 +38,7 @@ const Stock = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortOption, setSortOption] = useState("name-asc");
+  const [refreshKey, setRefreshKey] = useState(0);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
@@ -58,7 +72,7 @@ const Stock = () => {
         unsubscribeItems();
       };
     }
-  }, [db, userInfo]);
+  }, [db, userInfo, refreshKey]);
 
   // Process items with booking data
   const itemsWithBookingData = useMemo(() => {
@@ -105,8 +119,8 @@ const Stock = () => {
     return itemsWithBookingData
       .filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesAvailability = 
-          availabilityFilter === "all" || 
+        const matchesAvailability =
+          availabilityFilter === "all" ||
           item.availability === availabilityFilter;
         return matchesSearch && matchesAvailability;
       })
@@ -114,8 +128,10 @@ const Stock = () => {
         switch (sortOption) {
           case "name-asc": return a.name.localeCompare(b.name);
           case "name-desc": return b.name.localeCompare(a.name);
-          case "price-asc": return (a.rentValue || 0) - (b.rentValue || 0);
-          case "price-desc": return (b.rentValue || 0) - (a.rentValue || 0);
+          case "price-asc":
+            return getRepresentativePrice(a) - getRepresentativePrice(b);
+          case "price-desc":
+            return getRepresentativePrice(b) - getRepresentativePrice(a);
           case "popularity": return (b.rented || 0) - (a.rented || 0);
           default: return 0;
         }
@@ -165,8 +181,7 @@ const Stock = () => {
   };
 
   const handleRefresh = () => {
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 500); // Simulate refresh
+    setRefreshKey(oldKey => oldKey + 1);
   };
 
   // Animation variants
@@ -194,11 +209,11 @@ const Stock = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Inventory Management</h1>
             <p className="text-gray-500 text-sm sm:text-base">
               {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} displayed
-              {itemsWithBookingData.length !== filteredItems.length && 
+              {itemsWithBookingData.length !== filteredItems.length &&
                 ` (of ${itemsWithBookingData.length} total)`}
             </p>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -226,7 +241,7 @@ const Stock = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <div className="flex gap-3">
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -239,10 +254,10 @@ const Stock = () => {
               >
                 <option value="all">All Statuses</option>
                 <option value="available">Available</option>
-                <option value="unavailable">Unavailable</option>
+                <option value="not-available">Unavailable</option>
               </select>
             </div>
-            
+
             <div className="relative flex-1">
               <select
                 className="pl-4 pr-8 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
@@ -257,7 +272,7 @@ const Stock = () => {
               </select>
             </div>
           </div>
-          
+
           <motion.button
             whileHover={{ rotate: 90 }}
             whileTap={{ scale: 0.9 }}
@@ -277,7 +292,7 @@ const Stock = () => {
             ))}
           </div>
         ) : filteredItems.length === 0 ? (
-          <EmptyState 
+          <EmptyState
             title={searchTerm ? "No matching items found" : "Your inventory is empty"}
             description={searchTerm ? "Try adjusting your search or filters" : "Add your first item to get started"}
             buttonText="Add Item"
@@ -298,8 +313,8 @@ const Stock = () => {
                   layout
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 >
-                  <StockItemCard 
-                    item={item} 
+                  <StockItemCard
+                    item={item}
                     onClick={() => handleOpenInfoModal(item)}
                     onEdit={(e) => { e.stopPropagation(); handleEditItem(item); }}
                     onDelete={(e) => { e.stopPropagation(); handleDeleteItem(item); }}

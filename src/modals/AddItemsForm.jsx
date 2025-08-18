@@ -4,6 +4,7 @@ import { FiUploadCloud } from 'react-icons/fi';
 import { getDatabase, ref, push, set, update } from 'firebase/database';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
+import Select from 'react-select';
 
 import CustomDatePicker from '../components/CustomDatePicker';
 
@@ -56,8 +57,8 @@ const RadioGroup = ({ label, name, options, formData, handleRadioChange, classNa
 
 const AddItemsForm = ({ isOpen, onClose, item }) => {
   const currency = useSelector((state) => state.currency.value);
-  const categories = useSelector((state) => state.category.value); // Get categories from Redux
-  const colors = useSelector((state) => state.color.value); // Get colors from Redux
+  const categories = useSelector((state) => state.category.value);
+  const colors = useSelector((state) => state.color.value);
   const initialFormData = {
     name: '',
     category: '',
@@ -66,7 +67,7 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
     sizeFrom: '',
     sizeTo: '',
     long: '',
-    colors: '',
+    colors: [],
     purchaseDate: '',
     purchaseFrom: '',
     itemCountry: '',
@@ -95,7 +96,7 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
   useEffect(() => {
     if (isOpen) {
       if (item) {
-        setFormData(item);
+        setFormData({ ...initialFormData, ...item });
         if (item.photo) {
           setImageUrl(item.photo);
         }
@@ -344,20 +345,18 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                   <label htmlFor="colors" className="block text-sm font-medium text-gray-700 mb-1">
                     Colors
                   </label>
-                  <select
-                    id="colors"
+                  <Select
+                    isMulti
                     name="colors"
-                    value={formData.colors}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                      errors.colors ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select a color</option>
-                    {colors.map((color, index) => (
-                      <option key={index} value={color.name}>{color.name}</option>
-                    ))}
-                  </select>
+                    options={colors.map(c => ({ value: c.name, label: c.name }))}
+                    className="basic-multi-select"
+                    classNamePrefix="select"
+                    onChange={(selectedOptions) => {
+                      const selectedColors = selectedOptions ? selectedOptions.map(option => option.value) : [];
+                      setFormData(prev => ({ ...prev, colors: selectedColors }));
+                    }}
+                    value={colors.filter(c => formData.colors.includes(c.name)).map(c => ({ value: c.name, label: c.name }))}
+                  />
                   {errors.colors && <p className="mt-1 text-sm text-red-600">{errors.colors}</p>}
                 </div>
               </div>

@@ -16,18 +16,25 @@ import { useNavigate } from "react-router-dom";
 import AddNewBookingForm from "../modals/AddNewBookingForm";
 import AddCustomerPopup from "../modals/AddCustomerPopup";
 import AddItemsForm from "../modals/AddItemsForm";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+import EmptyState from "../components/EmptyState";
 
-const StatCard = ({ icon, title, value, color }) => (
+const StatCard = ({ icon, title, value, color, isLoading }) => (
   <motion.div
     whileHover={{ y: -5 }}
     className={`bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center space-x-4`}
   >
-    <div className={`p-3 rounded-full bg-${color}-100 text-${color}-600`}>
-      {icon}
-    </div>
+    {isLoading ? (
+      <Skeleton circle height={48} width={48} />
+    ) : (
+      <div className={`p-3 rounded-full bg-${color}-100 text-${color}-600`}>
+        {icon}
+      </div>
+    )}
     <div>
       <p className="text-sm font-medium text-gray-500">{title}</p>
-      <p className="text-2xl font-bold text-gray-800">{value}</p>
+      {isLoading ? <Skeleton width={100} /> : <p className="text-2xl font-bold text-gray-800">{value}</p>}
     </div>
   </motion.div>
 );
@@ -129,9 +136,8 @@ const Home = () => {
         }));
         setItems(itemsList);
         setStats((prev) => ({ ...prev, totalItems: itemsList.length }));
+        setIsLoading(false);
       });
-
-      setIsLoading(false);
 
       return () => {
         unsubscribeCustomers();
@@ -194,16 +200,6 @@ const Home = () => {
       .slice(0, 5);
   }, [bookings]);
 
-  if (isLoading) {
-    return (
-      <Sidebar>
-        <div className="flex items-center justify-center h-full">
-          <p>Loading...</p>
-        </div>
-      </Sidebar>
-    );
-  }
-
   return (
     <Sidebar>
       <div className="flex flex-col">
@@ -218,24 +214,28 @@ const Home = () => {
             title="Total Customers"
             value={stats.totalCustomers}
             color="indigo"
+            isLoading={isLoading}
           />
           <StatCard
             icon={<FiBox size={24} />}
             title="Items in Stock"
             value={stats.totalItems}
             color="blue"
+            isLoading={isLoading}
           />
           <StatCard
             icon={<FiClipboard size={24} />}
             title="Total Bookings"
             value={stats.totalBookings}
             color="green"
+            isLoading={isLoading}
           />
           <StatCard
             icon={<FiDollarSign size={24} />}
             title="Total Revenue"
             value={`${currency.symbol}${stats.totalRevenue.toFixed(2)}`}
             color="yellow"
+            isLoading={isLoading}
           />
         </div>
 
@@ -267,48 +267,47 @@ const Home = () => {
             Recent Bookings
           </h2>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            {recentBookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="flex items-center justify-between p-4 border-b last:border-b-0"
-              >
-                <div>
-                  <p className="font-medium">
-                    {
-                      customers.find((c) => c.id === booking.customerId)
-                        ?.name
-                    }
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {booking.items.length} items
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">
-                    {currency.symbol}{booking.totalAmount.toFixed(2)}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {formatDate(booking.deliveryDate)}
-                  </p>
-                </div>
+            {isLoading ? (
+              <div className="p-4">
+                <Skeleton count={5} height={60} />
               </div>
-            ))}
+            ) : recentBookings.length > 0 ? (
+              recentBookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="flex items-center justify-between p-4 border-b last:border-b-0"
+                >
+                  <div>
+                    <p className="font-medium">
+                      {
+                        customers.find((c) => c.id === booking.customerId)
+                          ?.name
+                      }
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {booking.items.length} items
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">
+                      {currency.symbol}{booking.totalAmount.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {formatDate(booking.deliveryDate)}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <EmptyState
+                title="No recent bookings"
+                description="Your most recent bookings will appear here."
+              />
+            )}
           </div>
         </div>
       </div>
       <AddNewBookingForm
-        isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
-      />
-      <AddCustomerPopup
-        isOpen={isCustomerModalOpen}
-        onClose={() => setIsCustomerModalOpen(false)}
-      />
-      <AddItemsForm
-        isOpen={isItemModalOpen}
-        onClose={() => setIsItemModalOpen(false)}
-      />
-    <AddNewBookingForm
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
       />

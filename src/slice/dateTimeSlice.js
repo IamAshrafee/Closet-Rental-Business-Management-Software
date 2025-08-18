@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  value: localStorage.getItem('dateTimeFormat') ? JSON.parse(localStorage.getItem('dateTimeFormat')) : {
+  value: {
     dateFormat: 'MM/DD/YYYY',
     timeFormat: 'hh:mm A',
     locale: 'en-US',
@@ -14,7 +14,6 @@ export const dateTimeSlice = createSlice({
   reducers: {
     setDateTimeFormat: (state, action) => {
       state.value = action.payload;
-      localStorage.setItem('dateTimeFormat', JSON.stringify(action.payload));
     },
   },
 });

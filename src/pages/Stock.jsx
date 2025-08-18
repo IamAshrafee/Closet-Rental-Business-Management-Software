@@ -154,6 +154,10 @@ const Stock = () => {
   };
 
   const handleDeleteItem = (item) => {
+    if (item.activeBookingsCount > 0) {
+      alert("Cannot delete an item with active bookings. Please complete or delete the active bookings first.");
+      return;
+    }
     if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
       const itemRef = ref(db, `users/${userInfo.uid}/items/${item.id}`);
       remove(itemRef).catch(error => console.error("Error deleting item:", error));

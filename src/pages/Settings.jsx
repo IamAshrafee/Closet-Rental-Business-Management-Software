@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../layout/Sidebar';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrency } from '../slice/currencySlice';
 import { setCompanyName } from '../slice/companySlice';
 import { setDateTimeFormat } from '../slice/dateTimeSlice';
-import { addCategory, removeCategory, updateCategory } from '../slice/categorySlice';
-import { addColor, removeColor, updateColor } from '../slice/colorSlice';
+import { setCategories } from '../slice/categorySlice';
+import { setColors } from '../slice/colorSlice';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { getDatabase, ref, onValue, set } from 'firebase/database';
 
 const currencies = [
   { symbol: '$', code: 'USD' },
@@ -30,6 +31,8 @@ const timeFormats = [
 
 const Settings = () => {
   const dispatch = useDispatch();
+  const userInfo = useSelector((state) => state.userLogInfo.value);
+  const db = getDatabase();
   const selectedCurrency = useSelector((state) => state.currency.value);
   const companyName = useSelector((state) => state.company.value);
   const selectedDateTimeFormat = useSelector((state) => state.dateTime.value);
@@ -46,36 +49,73 @@ const Settings = () => {
   const [editedColorName, setEditedColorName] = useState('');
   const [editedColorHex, setEditedColorHex] = useState('');
 
+  useEffect(() => {
+    if (userInfo) {
+      const settingsRef = ref(db, `users/${userInfo.uid}/settings`);
+      onValue(settingsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          if (data.categories) {
+            dispatch(setCategories(data.categories));
+          }
+          if (data.colors) {
+            dispatch(setColors(data.colors));
+          }
+          if (data.currency) {
+            dispatch(setCurrency(data.currency));
+          }
+          if (data.companyName) {
+            dispatch(setCompanyName(data.companyName));
+          }
+          if (data.dateTimeFormat) {
+            dispatch(setDateTimeFormat(data.dateTimeFormat));
+          }
+        }
+      });
+    }
+  }, [db, userInfo, dispatch]);
+
   const handleCurrencyChange = (e) => {
     const currency = currencies.find(c => c.code === e.target.value);
     if (currency) {
-      dispatch(setCurrency(currency));
+      const currencyRef = ref(db, `users/${userInfo.uid}/settings/currency`);
+      set(currencyRef, currency);
     }
   };
 
   const handleCompanyNameChange = (e) => {
-    dispatch(setCompanyName(e.target.value));
+    const newName = e.target.value;
+    const companyNameRef = ref(db, `users/${userInfo.uid}/settings/companyName`);
+    set(companyNameRef, newName);
   };
 
   const handleDateFormatChange = (e) => {
     const newFormat = e.target.value;
-    dispatch(setDateTimeFormat({ ...selectedDateTimeFormat, dateFormat: newFormat }));
+    const newDateTimeFormat = { ...selectedDateTimeFormat, dateFormat: newFormat };
+    const dateTimeFormatRef = ref(db, `users/${userInfo.uid}/settings/dateTimeFormat`);
+    set(dateTimeFormatRef, newDateTimeFormat);
   };
 
   const handleTimeFormatChange = (e) => {
     const newFormat = e.target.value;
-    dispatch(setDateTimeFormat({ ...selectedDateTimeFormat, timeFormat: newFormat }));
+    const newDateTimeFormat = { ...selectedDateTimeFormat, timeFormat: newFormat };
+    const dateTimeFormatRef = ref(db, `users/${userInfo.uid}/settings/dateTimeFormat`);
+    set(dateTimeFormatRef, newDateTimeFormat);
   };
 
   const handleAddCategory = () => {
     if (newCategory.trim() !== '' && !categories.includes(newCategory.trim())) {
-      dispatch(addCategory(newCategory.trim()));
+      const newCategories = [...categories, newCategory.trim()];
+      const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
+      set(categoriesRef, newCategories);
       setNewCategory('');
     }
   };
 
   const handleRemoveCategory = (categoryToRemove) => {
-    dispatch(removeCategory(categoryToRemove));
+    const newCategories = categories.filter(category => category !== categoryToRemove);
+    const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
+    set(categoriesRef, newCategories);
   };
 
   const handleEditCategory = (category) => {
@@ -85,7 +125,9 @@ const Settings = () => {
 
   const handleSaveCategory = () => {
     if (editedCategoryName.trim() !== '' && editedCategoryName.trim() !== editingCategory) {
-      dispatch(updateCategory({ oldCategory: editingCategory, newCategory: editedCategoryName.trim() }));
+      const newCategories = categories.map(c => (c === editingCategory ? editedCategoryName.trim() : c));
+      const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
+      set(categoriesRef, newCategories);
       setEditingCategory(null);
       setEditedCategoryName('');
     }
@@ -98,14 +140,18 @@ const Settings = () => {
 
   const handleAddColor = () => {
     if (newColorName.trim() !== '' && !colors.some(color => color.name === newColorName.trim())) {
-      dispatch(addColor({ name: newColorName.trim(), hex: newColorHex }));
+      const newColors = [...colors, { name: newColorName.trim(), hex: newColorHex }];
+      const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
+      set(colorsRef, newColors);
       setNewColorName('');
       setNewColorHex('#000000');
     }
   };
 
   const handleRemoveColor = (colorToRemove) => {
-    dispatch(removeColor(colorToRemove));
+    const newColors = colors.filter(color => color.name !== colorToRemove.name);
+    const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
+    set(colorsRef, newColors);
   };
 
   const handleEditColor = (color) => {
@@ -116,7 +162,9 @@ const Settings = () => {
 
   const handleSaveColor = () => {
     if (editedColorName.trim() !== '' && editedColorHex.trim() !== '') {
-      dispatch(updateColor({ oldColorName: editingColor.name, newColorName: editedColorName.trim(), newColorHex: editedColorHex }));
+      const newColors = colors.map(c => (c.name === editingColor.name ? { name: editedColorName.trim(), hex: editedColorHex } : c));
+      const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
+      set(colorsRef, newColors);
       setEditingColor(null);
       setEditedColorName('');
       setEditedColorHex('');

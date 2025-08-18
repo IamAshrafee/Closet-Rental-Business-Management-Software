@@ -340,7 +340,26 @@ const AddItemsForm = ({ isOpen, onClose, item }) => {
                 )}
                 
                 <InputField label="Length (optional)" name="long" formData={formData} errors={errors} handleChange={handleChange} />
-                <InputField label="Colors" name="colors" formData={formData} errors={errors} handleChange={handleChange} />
+                <div className="mb-4">
+                  <label htmlFor="colors" className="block text-sm font-medium text-gray-700 mb-1">
+                    Colors
+                  </label>
+                  <select
+                    id="colors"
+                    name="colors"
+                    value={formData.colors}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                      errors.colors ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select a color</option>
+                    {colors.map((color, index) => (
+                      <option key={index} value={color.name}>{color.name}</option>
+                    ))}
+                  </select>
+                  {errors.colors && <p className="mt-1 text-sm text-red-600">{errors.colors}</p>}
+                </div>
               </div>
 
               {/* Right Column */}

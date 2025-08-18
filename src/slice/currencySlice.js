@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  value: localStorage.getItem('currency') ? JSON.parse(localStorage.getItem('currency')) : { symbol: '$', code: 'USD' },
+  value: { symbol: '$', code: 'USD' },
 };
 
 export const currencySlice = createSlice({
@@ -10,7 +10,6 @@ export const currencySlice = createSlice({
   reducers: {
     setCurrency: (state, action) => {
       state.value = action.payload;
-      localStorage.setItem('currency', JSON.stringify(action.payload));
     },
   },
 });

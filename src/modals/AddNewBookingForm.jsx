@@ -665,7 +665,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <Select
                     name="categoryFilter"
-                    options={categories.map(c => ({ value: c.name, label: c.name }))}
+                    options={categories.map(c => ({ value: c, label: c }))}
                     onChange={setCategoryFilter}
                     placeholder="Filter by category..."
                     isClearable

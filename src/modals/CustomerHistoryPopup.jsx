@@ -25,7 +25,7 @@ const StatCard = ({ icon, label, value, color }) => (
   </motion.div>
 );
 
-const BookingItem = ({ booking, getItemName, currency, formatDate }) => (
+const BookingItem = ({ booking, getItemDetails, currency, formatDate }) => (
   <motion.li 
     className="p-5 border border-gray-200 rounded-xl bg-white shadow-xs mb-4"
     initial={{ opacity: 0, y: 10 }}
@@ -69,13 +69,24 @@ const BookingItem = ({ booking, getItemName, currency, formatDate }) => (
         <FiList className="text-gray-400 mr-2" size={14} />
         <span>Items Rented</span>
       </div>
-      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {booking.items?.map((item, index) => (
-          <li key={index} className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-            {getItemName(item.itemId)}
-          </li>
-        ))}
-      </ul>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {booking.items?.map((item, index) => {
+          const itemDetails = getItemDetails(item.itemId);
+          return (
+            <div key={index} className="flex items-center bg-gray-50 p-2 rounded-lg">
+              <img 
+                src={itemDetails.photo || '/assets/default-item-image.svg'} 
+                alt={itemDetails.name} 
+                className="w-12 h-12 object-cover rounded-md mr-3"
+              />
+              <div>
+                <p className="font-semibold text-gray-700 text-sm">{itemDetails.name || 'Unknown Item'}</p>
+                <p className="text-xs text-gray-500">{itemDetails.category || 'Uncategorized'}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   </motion.li>
 );
@@ -105,9 +116,9 @@ const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = []
   const activeBookings = bookings.filter(b => b.status === 'Upcoming' || b.status === 'Ongoing').length;
   const totalOutstanding = bookings.reduce((acc, b) => acc + (b.dueAmount > 0 ? b.dueAmount : 0), 0);
 
-  const getItemName = (itemId) => {
+  const getItemDetails = (itemId) => {
     const item = stockItems.find(item => item.id === itemId);
-    return item ? item.name : 'Unknown Item';
+    return item || {};
   };
 
   const formatDate = (dateString) => {
@@ -231,7 +242,7 @@ const CustomerHistoryPopup = ({ isOpen, customer, bookings = [], stockItems = []
                     <BookingItem 
                       key={booking.id} 
                       booking={booking} 
-                      getItemName={getItemName} 
+                      getItemDetails={getItemDetails} 
                       currency={currency}
                       formatDate={formatDate}
                     />

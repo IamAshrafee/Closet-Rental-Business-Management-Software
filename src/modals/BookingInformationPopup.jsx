@@ -262,19 +262,22 @@ const BookingInformationPopup = ({ booking, onClose }) => {
                     {detailedItems.map((item, index) => (
                       <div
                         key={`${item.itemId}-${index}`}
-                        className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
+                        className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200"
                       >
-                        <div>
-                          <p className="font-medium text-gray-700 text-sm">
+                        <img
+                          src={item.photo || '/assets/default-item-image.svg'}
+                          alt={item.name}
+                          className="w-16 h-16 object-cover rounded-md mr-4"
+                        />
+                        <div className="flex-grow">
+                          <p className="font-semibold text-gray-800 text-sm">
                             {item.name || "Unknown Item"}
                           </p>
-                          {item.description && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {item.description}
-                            </p>
-                          )}
+                          <p className="text-xs text-gray-500">
+                            {item.category || "Uncategorized"}
+                          </p>
                         </div>
-                        <p className="text-sm font-semibold text-gray-800 whitespace-nowrap">
+                        <p className="text-sm font-bold text-gray-800 whitespace-nowrap">
                           {currency.symbol}
                           {parseFloat(item.calculatedPrice || 0).toFixed(2)}
                         </p>

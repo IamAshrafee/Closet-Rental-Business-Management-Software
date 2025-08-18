@@ -10,9 +10,9 @@ const DeliveryInformationPopup = ({ booking, stockItems, onClose }) => {
     return null;
   }
 
-  const getItemName = (itemId) => {
+  const getItemDetails = (itemId) => {
     const item = stockItems.find(item => item.id === itemId);
-    return item ? item.name : 'Item not found';
+    return item || {};
   };
 
   const formatDate = (dateString) => {
@@ -74,11 +74,31 @@ const DeliveryInformationPopup = ({ booking, stockItems, onClose }) => {
           {/* Items to be Delivered */}
           <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 shadow-sm">
             <h3 className="text-lg font-semibold mb-3 text-purple-800 flex items-center"><FiPackage className="mr-2" /> Items to be Delivered</h3>
-            <ul className="list-disc list-inside pl-5 text-sm text-gray-700 space-y-1">
-              {booking.items.map((item, index) => (
-                <li key={index}>{getItemName(item.itemId)}</li>
-              ))}
-            </ul>
+            <div className="space-y-3">
+              {booking.items.map((item, index) => {
+                const itemDetails = getItemDetails(item.itemId);
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center bg-white p-3 rounded-lg border border-gray-200"
+                  >
+                    <img
+                      src={itemDetails.photo || '/assets/default-item-image.svg'}
+                      alt={itemDetails.name}
+                      className="w-16 h-16 object-cover rounded-md mr-4"
+                    />
+                    <div className="flex-grow">
+                      <p className="font-semibold text-gray-800 text-sm">
+                        {itemDetails.name || "Unknown Item"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {itemDetails.category || "Uncategorized"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 

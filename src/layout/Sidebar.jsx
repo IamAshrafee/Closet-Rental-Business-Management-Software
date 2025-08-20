@@ -1,9 +1,9 @@
-import { FaUserFriends, FaSignOutAlt } from "react-icons/fa";
+import { FaUserFriends, FaSignOutAlt, FaUserTie } from "react-icons/fa";
 import { MdInventory, MdSpaceDashboard, MdNotificationsActive } from "react-icons/md";
 import { IoMdSettings } from "react-icons/io";
 import React, { useState, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { FiMenu, FiX } from "react-icons/fi";
+import { FiMenu, FiX, FiDollarSign } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
 import { userLogInfo } from "../slice/userSlice";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +23,8 @@ const SidebarContent = ({ onLinkClick, activeLink, normalLink }) => {
     { path: "/dashboard", icon: <MdSpaceDashboard size={22} />, label: "Dashboard" },
     { path: "/stock", icon: <MdInventory size={20} />, label: "Stock" },
     { path: "/customers", icon: <FaUserFriends size={20} />, label: "Customers" },
+    { path: "/partners", icon: <FaUserTie size={20} />, label: "Partners" },
+    { path: "/payouts", icon: <FiDollarSign size={20} />, label: "Payouts" },
     { path: "/bookings", icon: <FaUserFriends size={20} />, label: "Bookings" },
     { path: "/reminders", icon: <MdNotificationsActive size={20} />, label: "Reminders" },
     { path: "/settings", icon: <IoMdSettings size={20} />, label: "Settings" },

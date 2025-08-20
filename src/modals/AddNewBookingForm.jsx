@@ -423,15 +423,25 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
     
-    if (!validateForm()) {
-      setAlert({ show: true, type: 'error', message: 'Please fix the errors in the form' });
-      return;
-    }
-    
-    setSubmitting(true);
+    setIsSubmitting(true);
 
-    const totalRent = bookingDetails.items.reduce((total, item) => total + item.calculatedPrice, 0);
+    const itemsWithFinancials = bookingDetails.items.map(item => {
+        const stockItemDetails = stockItems.find(si => si.id === item.itemId);
+        if (stockItemDetails && stockItemDetails.isCollaborated) {
+            return {
+                ...item,
+                isCollaborated: true,
+                ownerId: stockItemDetails.ownerId,
+                ownerShare: item.calculatedPrice * 0.6,
+                businessShare: item.calculatedPrice * 0.4,
+            };
+        }
+        return item;
+    });
+
+    const totalRent = itemsWithFinancials.reduce((total, item) => total + item.calculatedPrice, 0);
     const totalCharges = Number(bookingDetails.deliveryCharge || 0) + Number(bookingDetails.otherCharges || 0);
     const totalAmount = totalRent + totalCharges;
     const totalAdvance = bookingDetails.advances.reduce((total, advance) => total + Number(advance.amount || 0), 0);
@@ -439,6 +449,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
 
     const dataToSave = {
       ...bookingDetails,
+      items: itemsWithFinancials,
       totalRent,
       totalCharges,
       totalAmount,

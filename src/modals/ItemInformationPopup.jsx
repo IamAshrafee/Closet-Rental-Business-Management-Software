@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiTag, FiGrid, FiMaximize2, FiDroplet, FiCalendar, FiMapPin, 
          FiDollarSign, FiInfo, FiCheckCircle, FiXCircle, FiTrendingUp, 
          FiFileText, FiImage, FiEdit2 } from 'react-icons/fi';
+import { FaUserTie } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
+import { getDatabase, ref, onValue } from 'firebase/database';
 
 const DetailItem = ({ icon, label, value, className = '', highlight }) => {
-    if (!value && value !== 0) return null; // Allow 0 as a valid value
+    if (!value && value !== 0) return null;
     return (
         <div className={`flex items-start py-2 ${className} ${highlight ? 'bg-indigo-50 rounded-md px-3 -mx-1' : ''}`}>
             <div className={`flex-shrink-0 mt-0.5 ${highlight ? 'text-indigo-600' : 'text-gray-500'}`}>
@@ -26,7 +28,21 @@ const DetailItem = ({ icon, label, value, className = '', highlight }) => {
 const ItemInformationPopup = ({ item, onClose, onEdit }) => {
     const currency = useSelector((state) => state.currency.value);
     const dateTimeFormat = useSelector((state) => state.dateTime.value);
-    const colorsList = useSelector((state) => state.color.value); // Get colors from Redux
+    const colorsList = useSelector((state) => state.color.value);
+    const userInfo = useSelector((state) => state.userLogInfo.value);
+    const db = getDatabase();
+
+    const [partners, setPartners] = useState([]);
+
+    useEffect(() => {
+        if (userInfo) {
+            const partnersRef = ref(db, `users/${userInfo.uid}/partners`);
+            onValue(partnersRef, (snapshot) => {
+                const data = snapshot.val();
+                setPartners(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
+            });
+        }
+    }, [db, userInfo]);
 
     if (!item) return null;
 
@@ -53,7 +69,11 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
         target,
         description,
         photo: imageUrl,
+        isCollaborated,
+        ownerId
     } = item;
+
+    const owner = partners.find(p => p.id === ownerId);
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -169,6 +189,17 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
                         )}
 
                         <div className="p-4 space-y-4">
+                            {isCollaborated && (
+                                <div>
+                                    <DetailItem
+                                        icon={<FaUserTie />}
+                                        label="COLLABORATION PARTNER"
+                                        value={owner?.name || 'Unknown'}
+                                        highlight
+                                    />
+                                </div>
+                            )}
+
                             {/* Pricing Section (Most Important) */}
                             <div>
                                 <DetailItem

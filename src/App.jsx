@@ -12,6 +12,8 @@ import { Provider } from "react-redux";
 import VerifyEmail from "./pages/VerifyEmail";
 import PrivateRoute from "./authentication/PrivateRoute";
 import Settings from "./pages/Settings";
+import Partners from "./pages/Partners";
+import PartnerPayouts from "./pages/PartnerPayouts";
 
 const router = createBrowserRouter([
   {
@@ -44,6 +46,14 @@ const router = createBrowserRouter([
       {
         path: "/settings",
         element: <Settings />,
+      },
+      {
+        path: "/partners",
+        element: <Partners />,
+      },
+      {
+        path: "/payouts",
+        element: <PartnerPayouts />,
       },
     ],
   },

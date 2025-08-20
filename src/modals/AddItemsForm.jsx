@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiUploadCloud } from 'react-icons/fi';
-import { getDatabase, ref, push, set, update } from 'firebase/database';
+import { getDatabase, ref, onValue, push, set, update } from 'firebase/database';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import CreatableSelect from 'react-select/creatable';
@@ -87,7 +87,9 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
     rentTo: '',
     target: '',
     description: '',
-    photo: ''
+    photo: '',
+    isCollaborated: false,
+    ownerId: ''
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -98,6 +100,7 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
   const [countrySuggestions, setCountrySuggestions] = useState([]);
   const [purchaseFromSuggestions, setPurchaseFromSuggestions] = useState([]);
   const [lengthSuggestions, setLengthSuggestions] = useState([]);
+  const [partners, setPartners] = useState([]);
   
   const [isColorModalOpen, setIsColorModalOpen] = useState(false);
   const [newColorName, setNewColorName] = useState('');
@@ -105,6 +108,16 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
 
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
+
+  useEffect(() => {
+    if (userInfo) {
+        const partnersRef = ref(db, `users/${userInfo.uid}/partners`);
+        onValue(partnersRef, (snapshot) => {
+            const data = snapshot.val();
+            setPartners(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
+        });
+    }
+  }, [db, userInfo]);
 
   useEffect(() => {
     if (stockItems && stockItems.length > 0) {
@@ -212,10 +225,10 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
   };
 
   const handleChange = (e) => {
-    const { name, value, type } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value
+      [name]: type === 'checkbox' ? checked : type === 'number' ? (value === '' ? '' : Number(value)) : value
     }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
@@ -303,6 +316,7 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.category) newErrors.category = 'Category is required';
+    if (formData.isCollaborated && !formData.ownerId) newErrors.ownerId = 'Please select a partner';
     if (!formData.purchasePrice) newErrors.purchasePrice = 'Purchase price is required';
     if (!formData.target) newErrors.target = 'Target is required';
     
@@ -510,6 +524,42 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
 
               {/* Right Column */}
               <div>
+                <div className="mb-4 border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                        <input 
+                            type="checkbox" 
+                            id="isCollaborated" 
+                            name="isCollaborated"
+                            checked={formData.isCollaborated}
+                            onChange={handleChange}
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="isCollaborated" className="ml-2 block text-sm font-medium text-gray-900">
+                            Collaborated Item?
+                        </label>
+                    </div>
+                    {formData.isCollaborated && (
+                        <div className="mt-4">
+                            <label htmlFor="ownerId" className="block text-sm font-medium text-gray-700 mb-1">Partner/Owner</label>
+                            <select
+                                id="ownerId"
+                                name="ownerId"
+                                value={formData.ownerId}
+                                onChange={handleChange}
+                                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                                    errors.ownerId ? 'border-red-500' : 'border-gray-300'
+                                }`}
+                            >
+                                <option value="">Select a partner</option>
+                                {partners.map((p) => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                            {errors.ownerId && <p class="mt-1 text-sm text-red-600">{errors.ownerId}</p>}
+                        </div>
+                    )}
+                </div>
+
                 <CustomDatePicker 
                   label="Purchase Date" 
                   selected={formData.purchaseDate} 

@@ -189,13 +189,17 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
                                 <DetailItem
                                     icon={<FiMaximize2 />}
                                     label="Size"
-                                    value={sizeOption === 'fixed' ? sizeValue : sizeOption === 'range' ? `${sizeFrom}-${sizeTo}` : 'Free size'}
+                                    value={sizeOption === 'fixed' ? `${sizeValue}"` : sizeOption === 'range' ? `${sizeFrom}" - ${sizeTo}"` : 'Free size'}
                                 />
                                 {long && (
                                     <DetailItem
                                         icon={<FiMaximize2 />}
                                         label="Length"
-                                        value={long}
+                                        value={
+                                            category === 'Top-Skirt Set Dress' && long.includes(',')
+                                                ? `Top: ${long.split(',')[0].trim()}", Skirt: ${long.split(',')[1].trim()}"`
+                                                : `${long}"`
+                                        }
                                     />
                                 )}
                                 {colors && Array.isArray(colors) && colors.length > 0 && (

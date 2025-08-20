@@ -53,7 +53,8 @@ const Bookings = () => {
     const statusOrder = {
       'Waiting for Delivery': 1,
       'Waiting for Return': 2,
-      'Completed': 3,
+      'Postponed': 3,
+      'Completed': 4,
     };
 
     return bookings
@@ -151,7 +152,7 @@ const Bookings = () => {
     const totalSpent = customerBookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0);
     const totalBookings = customerBookings.length;
     const totalOutstanding = customerBookings.reduce((acc, b) => acc + (b.dueAmount > 0 ? b.dueAmount : 0), 0);
-    const activeBookings = customerBookings.filter(b => b.status !== 'Completed').length;
+    const activeBookings = customerBookings.filter(b => b.status !== 'Completed' && b.status !== 'Postponed').length;
 
     const customerRef = ref(db, `users/${userInfo.uid}/customers/${customerId}`);
     await update(customerRef, {
@@ -210,6 +211,7 @@ const Bookings = () => {
                 <option value="All">All Statuses</option>
                 <option value="Waiting for Delivery">Waiting for Delivery</option>
                 <option value="Waiting for Return">Waiting for Return</option>
+                <option value="Postponed">Postponed</option>
                 <option value="Completed">Completed</option>
               </select>
               <button
@@ -224,13 +226,13 @@ const Bookings = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
             {[...Array(8)].map((_, index) => (
               <Skeleton key={index} height={230} className="rounded-xl" />
             ))}
           </div>
         ) : filteredBookings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
             <AnimatePresence>
               {filteredBookings.map((booking) => (
                 <motion.div

@@ -158,12 +158,14 @@ const Reminders = () => {
                   bookings={deliveries} 
                   onDeliveryClick={handleDeliveryClick} 
                   formatDate={formatDate}
+                  stockItems={stockItems}
                 />
               ) : (
                 <UpcomingReturnsCard 
                   bookings={returns} 
                   onReturnClick={handleReturnClick}
                   formatDate={formatDate}
+                  stockItems={stockItems}
                 />
               )}
             </motion.div>

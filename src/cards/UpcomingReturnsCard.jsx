@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import EmptyState from '../components/EmptyState';
 
-const UpcomingReturnsCard = ({ bookings, onReturnClick, formatDate }) => {
+const UpcomingReturnsCard = ({ bookings, onReturnClick, formatDate, stockItems }) => {
   const currency = useSelector((state) => state.currency.value);
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full overflow-hidden flex flex-col">
@@ -89,6 +89,25 @@ const UpcomingReturnsCard = ({ bookings, onReturnClick, formatDate }) => {
                           <span>{currency.symbol}{booking.dueAmount?.toFixed(2)} due</span>
                         </div>
                       )}
+                    </div>
+
+                    <div className="border-t border-gray-100 mt-3 pt-3">
+                      <h5 className="text-xs font-bold text-gray-500 mb-2">Items</h5>
+                      <div className="space-y-2">
+                        {stockItems && booking.items.map((item, index) => {
+                          const itemDetails = stockItems.find(si => si.id === item.itemId);
+                          return (
+                            <div key={index} className="flex items-center">
+                              <img 
+                                src={itemDetails?.photo || '/assets/default-item-image.svg'} 
+                                alt={itemDetails?.name || 'Item'}
+                                className="w-8 h-8 object-cover rounded-md mr-2"
+                              />
+                              <span className="text-xs text-gray-700">{itemDetails?.name || 'Unknown Item'}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </motion.li>

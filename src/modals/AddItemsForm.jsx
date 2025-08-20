@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiUploadCloud } from 'react-icons/fi';
 import { getDatabase, ref, push, set, update } from 'firebase/database';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
+import { setColors } from '../slice/colorSlice';
+import { setCategories } from '../slice/categorySlice';
 
 import CustomDatePicker from '../components/CustomDatePicker';
+
+const capitalize = (s) => s && s.charAt(0).toUpperCase() + s.slice(1);
 
 const InputField = ({ label, name, type = 'text', required = false, placeholder = '', min, step, formData, errors, handleChange, children }) => (
   <div class="mb-4">
@@ -59,6 +63,7 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
   const currency = useSelector((state) => state.currency.value);
   const categories = useSelector((state) => state.category.value);
   const colors = useSelector((state) => state.color.value);
+  const dispatch = useDispatch();
   const initialFormData = {
     name: '',
     category: '',
@@ -93,6 +98,11 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
   const [countrySuggestions, setCountrySuggestions] = useState([]);
   const [purchaseFromSuggestions, setPurchaseFromSuggestions] = useState([]);
   const [lengthSuggestions, setLengthSuggestions] = useState([]);
+  
+  const [isColorModalOpen, setIsColorModalOpen] = useState(false);
+  const [newColorName, setNewColorName] = useState('');
+  const [newColorHex, setNewColorHex] = useState('#3b82f6');
+
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
@@ -251,10 +261,48 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
     }
   };
 
+  const handleCreateCategory = async (inputValue) => {
+    const capitalizedCategory = capitalize(inputValue.trim());
+    if (capitalizedCategory && !categories.includes(capitalizedCategory)) {
+      const updatedCategories = [...categories, capitalizedCategory];
+      const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
+      await set(categoriesRef, updatedCategories);
+      dispatch(setCategories(updatedCategories));
+      setFormData(prev => ({ ...prev, category: capitalizedCategory }));
+    }
+  };
+
+  const handleCreateColor = (inputValue) => {
+    setNewColorName(capitalize(inputValue));
+    setIsColorModalOpen(true);
+  };
+
+  const handleSaveNewColor = async () => {
+    if (newColorName.trim() === '') return;
+
+    const capitalizedName = capitalize(newColorName.trim());
+    const newColor = { name: capitalizedName, hex: newColorHex };
+    const updatedColors = [...colors, newColor];
+    
+    const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
+    await set(colorsRef, updatedColors);
+    
+    dispatch(setColors(updatedColors));
+    
+    setFormData(prev => ({
+      ...prev,
+      colors: [...prev.colors, newColor.name]
+    }));
+
+    setIsColorModalOpen(false);
+    setNewColorName('');
+    setNewColorHex('#3b82f6');
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.category.trim()) newErrors.category = 'Category is required';
+    if (!formData.category) newErrors.category = 'Category is required';
     if (!formData.purchasePrice) newErrors.purchasePrice = 'Purchase price is required';
     if (!formData.target) newErrors.target = 'Target is required';
     
@@ -315,7 +363,7 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/30 bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4 overflow-y-auto"
+        className="fixed inset-0 bg-black/30 bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-50 p-4 overflow-y-auto"
         onClick={onClose}
       >
         <motion.form
@@ -354,20 +402,17 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
                   <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
                     Category <span class="text-red-500">*</span>
                   </label>
-                  <select
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                      errors.category ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map((cat, index) => (
-                      <option key={index} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  <CreatableSelect
+                    isClearable
+                    onCreateOption={handleCreateCategory}
+                    options={categories.map(c => ({ value: c, label: c }))}
+                    value={formData.category ? { value: formData.category, label: formData.category } : null}
+                    onChange={(selectedOption) => {
+                      setFormData(prev => ({ ...prev, category: selectedOption ? selectedOption.value : '' }));
+                    }}
+                    className="basic-single-select"
+                    classNamePrefix="select"
+                  />
                   {errors.category && <p class="mt-1 text-sm text-red-600">{errors.category}</p>}
                 </div>
                 
@@ -384,17 +429,23 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
                 />
                 
                 {formData.sizeOption === 'fixed' && (
-                  <InputField label="Size Value" name="sizeValue" required formData={formData} errors={errors} handleChange={handleChange} />
+                  <InputField label="Size Value (inch)" name="sizeValue" required formData={formData} errors={errors} handleChange={handleChange} />
                 )}
                 
                 {formData.sizeOption === 'range' && (
                   <div className="grid grid-cols-2 gap-4">
-                    <InputField label="From" name="sizeFrom" required formData={formData} errors={errors} handleChange={handleChange} />
-                    <InputField label="To" name="sizeTo" required formData={formData} errors={errors} handleChange={handleChange} />
+                    <InputField label="From (inch)" name="sizeFrom" required formData={formData} errors={errors} handleChange={handleChange} />
+                    <InputField label="To (inch)" name="sizeTo" required formData={formData} errors={errors} handleChange={handleChange} />
                   </div>
                 )}
                 
-                <InputField label="Length (optional)" name="long" formData={formData} errors={errors} handleChange={handleChange}>
+                <InputField 
+                  label={formData.category === 'Top-Skirt Set Dress' ? 'Length (Top, Skirt) (inch)' : 'Length (inch)'} 
+                  name="long" 
+                  formData={formData} 
+                  errors={errors} 
+                  handleChange={handleChange}
+                >
                   <div className="relative">
                     <input
                       type="text"
@@ -402,6 +453,7 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
                       name="long"
                       value={formData.long}
                       onChange={handleChange}
+                      placeholder={formData.category === 'Top-Skirt Set Dress' ? 'e.g., 25,40' : ''}
                       className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
                         errors.long ? 'border-red-500' : 'border-gray-300'
                       }`}
@@ -426,17 +478,31 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
                   <label htmlFor="colors" className="block text-sm font-medium text-gray-700 mb-1">
                     Colors
                   </label>
-                  <Select
+                  <CreatableSelect
                     isMulti
-                    name="colors"
-                    options={colors.map(c => ({ value: c.name, label: c.name }))}
-                    className="basic-multi-select"
-                    classNamePrefix="select"
+                    isClearable
+                    onCreateOption={handleCreateColor}
+                    options={colors.map(c => ({ value: c.name, label: c.name, color: c.hex }))}
+                    value={colors.filter(c => formData.colors.includes(c.name)).map(c => ({ value: c.name, label: c.name, color: c.hex }))}
                     onChange={(selectedOptions) => {
                       const selectedColors = selectedOptions ? selectedOptions.map(option => option.value) : [];
                       setFormData(prev => ({ ...prev, colors: selectedColors }));
                     }}
-                    value={colors.filter(c => formData.colors.includes(c.name)).map(c => ({ value: c.name, label: c.name }))}
+                    formatOptionLabel={({ label, color }) => (
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{
+                          backgroundColor: color,
+                          borderRadius: '50%',
+                          width: '12px',
+                          height: '12px',
+                          marginRight: '8px',
+                          border: '1px solid #ccc'
+                        }} />
+                        {label}
+                      </div>
+                    )}
+                    className="basic-multi-select"
+                    classNamePrefix="select"
                   />
                   {errors.colors && <p class="mt-1 text-sm text-red-600">{errors.colors}</p>}
                 </div>
@@ -732,6 +798,68 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
             </motion.button>
           </div>
         </motion.form>
+        
+        {isColorModalOpen && (
+            <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 flex justify-center items-center z-[60]"
+            >
+            <motion.div
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -20, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm"
+            >
+                <h3 className="text-lg font-semibold mb-4">Add New Color</h3>
+                <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">Color Name</label>
+                <input
+                    type="text"
+                    value={newColorName}
+                    onChange={(e) => setNewColorName(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    readOnly
+                />
+                </div>
+                <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">Color Hex Code</label>
+                <div className="flex items-center mt-1">
+                    <input
+                    type="color"
+                    value={newColorHex}
+                    onChange={(e) => setNewColorHex(e.target.value)}
+                    className="w-10 h-10 p-1 border border-gray-300 rounded-md cursor-pointer"
+                    />
+                    <input
+                    type="text"
+                    value={newColorHex}
+                    onChange={(e) => setNewColorHex(e.target.value)}
+                    className="ml-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    />
+                </div>
+                </div>
+                <div className="flex justify-end space-x-2 mt-6">
+                <button
+                    type="button"
+                    onClick={() => setIsColorModalOpen(false)}
+                    className="px-4 py-2 rounded-md border border-gray-300 text-gray-700"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    onClick={handleSaveNewColor}
+                    className="px-4 py-2 rounded-md bg-indigo-600 text-white"
+                >
+                    Save Color
+                </button>
+                </div>
+            </motion.div>
+            </motion.div>
+        )}
       </motion.div>
     </AnimatePresence>
   );

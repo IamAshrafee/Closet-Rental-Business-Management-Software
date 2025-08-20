@@ -169,6 +169,7 @@ const Home = () => {
   };
 
   const deliveries = useMemo(() => {
+    if (!customers || customers.length === 0) return [];
     return bookings
       .filter((b) => b.status === "Waiting for Delivery")
       .map((booking) => {
@@ -182,6 +183,7 @@ const Home = () => {
   }, [bookings, customers]);
 
   const returns = useMemo(() => {
+    if (!customers || customers.length === 0) return [];
     return bookings
       .filter((b) => b.status === "Waiting for Return")
       .map((booking) => {
@@ -251,6 +253,7 @@ const Home = () => {
               bookings={deliveries}
               onDeliveryClick={(booking) => navigate("/reminders")}
               formatDate={formatDate}
+              stockItems={items}
             />
           </div>
           <div>
@@ -258,6 +261,7 @@ const Home = () => {
               bookings={returns}
               onReturnClick={(booking) => navigate("/reminders")}
               formatDate={formatDate}
+              stockItems={items}
             />
           </div>
         </div>
@@ -280,7 +284,7 @@ const Home = () => {
                   <div>
                     <p className="font-medium">
                       {
-                        customers.find((c) => c.id === booking.customerId)
+                        customers && customers.find((c) => c.id === booking.customerId)
                           ?.name
                       }
                     </p>

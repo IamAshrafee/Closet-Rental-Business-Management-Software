@@ -84,6 +84,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
       case 'Waiting for Delivery': return 'bg-blue-100 text-blue-800';
       case 'Waiting for Return': return 'bg-yellow-100 text-yellow-800';
       case 'Completed': return 'bg-green-100 text-green-800';
+      case 'Postponed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -140,7 +141,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
     }
   };
 
-  const statusOptions = ['Waiting for Delivery', 'Waiting for Return', 'Completed'];
+  const statusOptions = ['Waiting for Delivery', 'Waiting for Return', 'Completed', 'Postponed'];
 
   if (!customer) return null;
 

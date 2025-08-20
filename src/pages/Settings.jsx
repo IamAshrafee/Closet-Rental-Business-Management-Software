@@ -29,6 +29,8 @@ const timeFormats = [
   { label: 'HH:mm (24-hour)', format: 'HH:mm', example: '14:30' },
 ];
 
+const capitalize = (s) => s && s.charAt(0).toUpperCase() + s.slice(1);
+
 const Settings = () => {
   const dispatch = useDispatch();
   const userInfo = useSelector((state) => state.userLogInfo.value);
@@ -117,8 +119,9 @@ const Settings = () => {
   };
 
   const handleAddCategory = () => {
-    if (newCategory.trim() !== '' && !categories.includes(newCategory.trim())) {
-      const newCategories = [...categories, newCategory.trim()];
+    const capitalizedCategory = capitalize(newCategory.trim());
+    if (capitalizedCategory !== '' && !categories.includes(capitalizedCategory)) {
+      const newCategories = [...categories, capitalizedCategory];
       const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
       set(categoriesRef, newCategories);
       setNewCategory('');
@@ -137,8 +140,9 @@ const Settings = () => {
   };
 
   const handleSaveCategory = () => {
-    if (editedCategoryName.trim() !== '' && editedCategoryName.trim() !== editingCategory) {
-      const newCategories = categories.map(c => (c === editingCategory ? editedCategoryName.trim() : c));
+    const capitalizedCategory = capitalize(editedCategoryName.trim());
+    if (capitalizedCategory !== '' && capitalizedCategory !== editingCategory) {
+      const newCategories = categories.map(c => (c === editingCategory ? capitalizedCategory : c));
       const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
       set(categoriesRef, newCategories);
       setEditingCategory(null);
@@ -152,8 +156,9 @@ const Settings = () => {
   };
 
   const handleAddColor = () => {
-    if (newColorName.trim() !== '' && !colors.some(color => color.name === newColorName.trim())) {
-      const newColors = [...colors, { name: newColorName.trim(), hex: newColorHex }];
+    const capitalizedColorName = capitalize(newColorName.trim());
+    if (capitalizedColorName !== '' && !colors.some(color => color.name === capitalizedColorName)) {
+      const newColors = [...colors, { name: capitalizedColorName, hex: newColorHex }];
       const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
       set(colorsRef, newColors);
       setNewColorName('');
@@ -174,8 +179,9 @@ const Settings = () => {
   };
 
   const handleSaveColor = () => {
-    if (editedColorName.trim() !== '' && editedColorHex.trim() !== '') {
-      const newColors = colors.map(c => (c.name === editingColor.name ? { name: editedColorName.trim(), hex: editedColorHex } : c));
+    const capitalizedColorName = capitalize(editedColorName.trim());
+    if (capitalizedColorName !== '' && editedColorHex.trim() !== '') {
+      const newColors = colors.map(c => (c.name === editingColor.name ? { name: capitalizedColorName, hex: editedColorHex } : c));
       const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
       set(colorsRef, newColors);
       setEditingColor(null);
@@ -503,7 +509,7 @@ const Settings = () => {
                               <button
                                 onClick={() => handleRemoveColor(color)}
                                 className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-100"
-                                title="Delete color"
+                                title="Delete category"
                               >
                                 <FiTrash2 size={18} />
                               </button>

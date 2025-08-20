@@ -81,9 +81,9 @@ const StockItemCard = ({
   const getSize = useCallback(() => {
     switch (sizeOption) {
       case 'fixed':
-        return sizeValue;
+        return `${sizeValue}"`;
       case 'range':
-        return `${sizeFrom}-${sizeTo}`;
+        return `${sizeFrom}" - ${sizeTo}"`;
       case 'free':
         return 'Free size';
       default:

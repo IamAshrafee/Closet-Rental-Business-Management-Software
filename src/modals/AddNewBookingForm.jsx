@@ -199,6 +199,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
       if (showAvailableOnly && newBookingStart && newBookingEnd) {
         const isBooked = allBookings.some(b => {
           if (booking && b.id === booking.id) return false; // Ignore current booking if editing
+          if (b.status === 'Postponed') return false; // Ignore postponed bookings
 
           const hasItem = b.items?.some(i => i.itemId === item.id);
           if (!hasItem) return false;

@@ -14,6 +14,7 @@ import PrivateRoute from "./authentication/PrivateRoute";
 import Settings from "./pages/Settings";
 import Partners from "./pages/Partners";
 import PartnerPayouts from "./pages/PartnerPayouts";
+import Todo from "./pages/Todo";
 
 const router = createBrowserRouter([
   {
@@ -54,6 +55,10 @@ const router = createBrowserRouter([
       {
         path: "/payouts",
         element: <PartnerPayouts />,
+      },
+      {
+        path: "/todo",
+        element: <Todo />,
       },
     ],
   },

@@ -3,7 +3,7 @@ import { MdInventory, MdSpaceDashboard, MdNotificationsActive } from "react-icon
 import { IoMdSettings } from "react-icons/io";
 import React, { useState, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { FiMenu, FiX, FiDollarSign } from "react-icons/fi";
+import { FiMenu, FiX, FiDollarSign, FiCheckSquare } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
 import { userLogInfo } from "../slice/userSlice";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,6 +27,7 @@ const SidebarContent = ({ onLinkClick, activeLink, normalLink }) => {
     { path: "/payouts", icon: <FiDollarSign size={20} />, label: "Payouts" },
     { path: "/bookings", icon: <FaUserFriends size={20} />, label: "Bookings" },
     { path: "/reminders", icon: <MdNotificationsActive size={20} />, label: "Reminders" },
+    { path: "/todo", icon: <FiCheckSquare size={20} />, label: "Todo" },
     { path: "/settings", icon: <IoMdSettings size={20} />, label: "Settings" },
   ];
 

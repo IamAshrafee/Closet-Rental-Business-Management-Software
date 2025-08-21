@@ -11,9 +11,11 @@ import {
 } from "react-icons/fi";
 import { useSelector } from "react-redux";
 
+import { useFormatDate } from "../hooks/useFormatDate";
+
 const DeliveryInformationPopup = ({ booking, stockItems, onClose }) => {
   const currency = useSelector((state) => state.currency.value);
-  const dateTimeFormat = useSelector((state) => state.dateTime.value);
+  const { formatDate } = useFormatDate();
   if (!booking) {
     return null;
   }
@@ -21,16 +23,6 @@ const DeliveryInformationPopup = ({ booking, stockItems, onClose }) => {
   const getItemDetails = (itemId) => {
     const item = stockItems.find((item) => item.id === itemId);
     return item || {};
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    const options = {};
-    if (dateTimeFormat.dateFormat.includes("YYYY")) options.year = "numeric";
-    if (dateTimeFormat.dateFormat.includes("MM")) options.month = "2-digit";
-    if (dateTimeFormat.dateFormat.includes("DD")) options.day = "2-digit";
-    return date.toLocaleDateString(dateTimeFormat.locale, options);
   };
 
   return (

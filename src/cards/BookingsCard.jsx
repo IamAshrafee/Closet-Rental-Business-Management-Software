@@ -17,6 +17,7 @@ import {
 import { getDatabase, ref, onValue } from 'firebase/database';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
+import { useFormatDate } from '../hooks/useFormatDate';
 
 const InfoLine = ({ icon, label, value, className = '', iconClass = '' }) => (
   <div className={`flex items-center text-sm ${className}`}>
@@ -34,7 +35,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const currency = useSelector((state) => state.currency.value);
-  const dateTimeFormat = useSelector((state) => state.dateTime.value);
+  const { formatDate, formatTime } = useFormatDate();
 
   useEffect(() => {
     if (userInfo && booking.customerId) {
@@ -86,46 +87,6 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
       case 'Completed': return 'bg-green-100 text-green-800';
       case 'Postponed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-
-    switch (dateTimeFormat.dateFormat) {
-      case 'MM/DD/YYYY':
-        return `${month}/${day}/${year}`;
-      case 'DD/MM/YYYY':
-        return `${day}/${month}/${year}`;
-      case 'YYYY-MM-DD':
-        return `${year}-${month}-${day}`;
-      default:
-        return date.toLocaleDateString(dateTimeFormat.locale);
-    }
-  };
-
-  const formatTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    let hours = date.getHours();
-    let minutes = date.getMinutes();
-    let ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    minutes = minutes < 10 ? '0' + minutes : minutes;
-    const strTime = hours + ':' + minutes + ' ' + ampm;
-
-    switch (dateTimeFormat.timeFormat) {
-        case 'hh:mm A':
-            return strTime;
-        case 'HH:mm':
-            return `${date.getHours().toString().padStart(2, '0')}:${minutes}`;
-        default:
-            return date.toLocaleTimeString(dateTimeFormat.locale);
     }
   };
 
@@ -257,6 +218,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <div className="relative w-full sm:w-auto">
               <select
+                onClick={(e) => e.stopPropagation()}
                 onChange={handleStatusChange}
                 value={status}
                 className="appearance-none w-full bg-white border border-gray-300 rounded-lg shadow-sm pl-3 pr-8 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
@@ -308,7 +270,10 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
       <div className="border-t border-gray-200 px-4 py-3 bg-gray-50">
         <div className="flex justify-between items-center">
           <button 
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
             className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
           >
             {isExpanded ? 'Show less' : 'Show details'}

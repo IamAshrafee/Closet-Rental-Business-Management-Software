@@ -12,8 +12,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import EmptyState from '../components/EmptyState';
 
-const UpcomingReturnsCard = ({ bookings, onReturnClick, formatDate, stockItems }) => {
+import { useFormatDate } from '../hooks/useFormatDate';
+
+const UpcomingReturnsCard = ({ bookings, onReturnClick, stockItems }) => {
   const currency = useSelector((state) => state.currency.value);
+  const { formatDate } = useFormatDate();
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full overflow-hidden flex flex-col">
       <div className="p-5 border-b border-gray-200">

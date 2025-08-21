@@ -14,6 +14,7 @@ import {
 import { getDatabase, ref, get } from "firebase/database";
 import { useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
+import { useFormatDate } from "../hooks/useFormatDate";
 
 const SectionHeader = ({ icon, title }) => (
   <div className="flex items-center mb-4">
@@ -41,7 +42,7 @@ const BookingInformationPopup = ({ booking, onClose }) => {
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const currency = useSelector((state) => state.currency.value);
-  const dateTimeFormat = useSelector((state) => state.dateTime.value);
+  const { formatDate, formatTime } = useFormatDate();
 
   useEffect(() => {
     if (userInfo && booking) {
@@ -90,46 +91,6 @@ const BookingInformationPopup = ({ booking, onClose }) => {
     endDate,
     createdAt,
   } = booking;
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-
-    switch (dateTimeFormat.dateFormat) {
-      case "MM/DD/YYYY":
-        return `${month}/${day}/${year}`;
-      case "DD/MM/YYYY":
-        return `${day}/${month}/${year}`;
-      case "YYYY-MM-DD":
-        return `${year}-${month}-${day}`;
-      default:
-        return date.toLocaleDateString(dateTimeFormat.locale);
-    }
-  };
-
-  const formatTime = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    let hours = date.getHours();
-    let minutes = date.getMinutes();
-    let ampm = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    minutes = minutes < 10 ? "0" + minutes : minutes;
-    const strTime = hours + ":" + minutes + " " + ampm;
-
-    switch (dateTimeFormat.timeFormat) {
-      case "hh:mm A":
-        return strTime;
-      case "HH:mm":
-        return `${date.getHours().toString().padStart(2, "0")}:${minutes}`;
-      default:
-        return date.toLocaleTimeString(dateTimeFormat.locale);
-    }
-  };
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "N/A";

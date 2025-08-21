@@ -22,6 +22,7 @@ const dateFormats = [
   { label: 'MM/DD/YYYY', format: 'MM/DD/YYYY', example: '12/31/2023' },
   { label: 'DD/MM/YYYY', format: 'DD/MM/YYYY', example: '31/12/2023' },
   { label: 'YYYY-MM-DD', format: 'YYYY-MM-DD', example: '2023-12-31' },
+  { label: 'Day Month Year', format: 'dayMonthYear', example: '31 Dec 2023' },
 ];
 
 const timeFormats = [

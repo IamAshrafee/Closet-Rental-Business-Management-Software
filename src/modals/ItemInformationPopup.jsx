@@ -25,12 +25,14 @@ const DetailItem = ({ icon, label, value, className = '', highlight }) => {
     );
 };
 
+import { useFormatDate } from '../hooks/useFormatDate';
+
 const ItemInformationPopup = ({ item, onClose, onEdit }) => {
     const currency = useSelector((state) => state.currency.value);
-    const dateTimeFormat = useSelector((state) => state.dateTime.value);
     const colorsList = useSelector((state) => state.color.value);
     const userInfo = useSelector((state) => state.userLogInfo.value);
     const db = getDatabase();
+    const { formatDate } = useFormatDate();
 
     const [partners, setPartners] = useState([]);
 
@@ -75,24 +77,7 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
 
     const owner = partners.find(p => p.id === ownerId);
 
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const day = date.getDate().toString().padStart(2, '0');
-
-        switch (dateTimeFormat.dateFormat) {
-          case 'MM/DD/YYYY':
-            return `${month}/${day}/${year}`;
-          case 'DD/MM/YYYY':
-            return `${day}/${month}/${year}`;
-          case 'YYYY-MM-DD':
-            return `${year}-${month}-${day}`;
-          default:
-            return date.toLocaleDateString(dateTimeFormat.locale);
-        }
-    };
+    
 
     const getRentPrice = () => {
         switch (rentOption) {

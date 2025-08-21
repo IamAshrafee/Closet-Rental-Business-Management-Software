@@ -423,9 +423,12 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      setAlert({ show: true, type: 'error', message: 'Please fill all the required fields and correct the errors.' });
+      return;
+    }
     
-    setIsSubmitting(true);
+    setSubmitting(true);
 
     const itemsWithFinancials = bookingDetails.items.map(item => {
         const stockItemDetails = stockItems.find(si => si.id === item.itemId);
@@ -466,7 +469,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
       } else {
         const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
         const newBookingRef = push(bookingsRef);
-        const newBookingId = `B-${newBookingRef.key.slice(-6)}`;
+        const newBookingId = `B-${newBookingRef.key}`;
         await set(newBookingRef, { ...dataToSave, createdAt: new Date().toISOString(), id: newBookingId });
         setAlert({ show: true, type: 'success', message: 'Booking created successfully!' });
       }
@@ -685,10 +688,19 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
                   />
                   <Select
                     name="colorFilter"
-                    options={colors.map(c => ({ value: c.name, label: c.name }))}
+                    options={colors.map(c => ({ value: c.name, label: c.name, color: c.hex }))}
                     onChange={setColorFilter}
                     placeholder="Filter by color..."
                     isClearable
+                    formatOptionLabel={({ label, color }) => (
+                      <div className="flex items-center">
+                        <div
+                          className="w-4 h-4 rounded-full mr-2 border"
+                          style={{ backgroundColor: color }}
+                        ></div>
+                        <span>{label}</span>
+                      </div>
+                    )}
                   />
                 </div>
                 <div className="flex items-center">

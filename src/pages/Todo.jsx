@@ -6,6 +6,8 @@ import { FiPlus, FiTrash2, FiCheckCircle, FiCircle, FiCalendar } from 'react-ico
 import { motion, AnimatePresence } from 'framer-motion';
 import EmptyState from '../components/EmptyState';
 
+import { useFormatDate } from '../hooks/useFormatDate';
+
 const Todo = () => {
   const [todos, setTodos] = useState([]);
   const [newTodoTitle, setNewTodoTitle] = useState('');
@@ -15,7 +17,7 @@ const Todo = () => {
 
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
-  const dateTimeFormat = useSelector((state) => state.dateTime.value);
+  const { formatDate, formatTime } = useFormatDate();
 
   useEffect(() => {
     if (userInfo) {
@@ -36,45 +38,7 @@ const Todo = () => {
 
   const formatDateTime = (dateString) => {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    let hours = date.getHours();
-    let minutes = date.getMinutes();
-    let ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    minutes = minutes < 10 ? '0' + minutes : minutes;
-    const strTime = hours + ':' + minutes + ' ' + ampm;
-
-    let formattedDate;
-    switch (dateTimeFormat.dateFormat) {
-      case 'MM/DD/YYYY':
-        formattedDate = `${month}/${day}/${year}`;
-        break;
-      case 'DD/MM/YYYY':
-        formattedDate = `${day}/${month}/${year}`;
-        break;
-      case 'YYYY-MM-DD':
-        formattedDate = `${year}-${month}-${day}`;
-        break;
-      default:
-        formattedDate = date.toLocaleDateString(dateTimeFormat.locale);
-    }
-
-    let formattedTime;
-    switch (dateTimeFormat.timeFormat) {
-        case 'hh:mm A':
-            formattedTime = strTime;
-            break;
-        case 'HH:mm':
-            formattedTime = `${date.getHours().toString().padStart(2, '0')}:${minutes}`;
-            break;
-        default:
-            formattedTime = date.toLocaleTimeString(dateTimeFormat.locale);
-    }
-    return `${formattedDate} ${formattedTime}`;
+    return `${formatDate(dateString)} ${formatTime(dateString)}`;
   };
 
   const handleAddTodo = async (e) => {

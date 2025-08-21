@@ -182,16 +182,20 @@ const Bookings = () => {
           <div className="w-full md:w-auto flex flex-col md:flex-row items-start md:items-center gap-2">
             <div className="w-full md:w-auto flex items-center gap-2">
               <div className="relative flex-grow">
+                <label htmlFor="searchQuery" className="sr-only">Search bookings</label>
                 <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
+                  id="searchQuery"
                   placeholder="Search..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+              <label htmlFor="searchCategory" className="sr-only">Search category</label>
               <select
+                id="searchCategory"
                 value={searchCategory}
                 onChange={(e) => setSearchCategory(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -203,7 +207,9 @@ const Bookings = () => {
               </select>
             </div>
             <div className="w-full md:w-auto flex items-center gap-2">
+              <label htmlFor="statusFilter" className="sr-only">Filter by status</label>
               <select
+                id="statusFilter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"

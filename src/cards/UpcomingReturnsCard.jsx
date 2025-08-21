@@ -55,6 +55,14 @@ const UpcomingReturnsCard = ({ bookings, onReturnClick, formatDate, stockItems }
                   whileHover={{ scale: 1.01 }}
                   className="border border-gray-200 rounded-lg overflow-hidden shadow-xs cursor-pointer"
                   onClick={() => onReturnClick(booking)}
+                  role="button"
+                  tabIndex="0"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onReturnClick(booking);
+                    }
+                  }}
                 >
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-3">

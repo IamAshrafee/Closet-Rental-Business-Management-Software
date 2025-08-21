@@ -148,16 +148,20 @@ const Customers = () => {
           
           <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
             <div className="relative flex-grow">
+              <label htmlFor="searchQuery" className="sr-only">Search customers</label>
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
+                id="searchQuery"
                 placeholder="Search..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            <label htmlFor="searchCategory" className="sr-only">Search category</label>
             <select
+              id="searchCategory"
               value={searchCategory}
               onChange={(e) => setSearchCategory(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -196,6 +200,14 @@ const Customers = () => {
                 key={customer.id} 
                 onClick={() => handleOpenInfoModal(customer)} 
                 className="cursor-pointer"
+                role="button"
+                tabIndex="0"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleOpenInfoModal(customer);
+                  }
+                }}
               >
                 <CustomerCard 
                   customer={customer} 

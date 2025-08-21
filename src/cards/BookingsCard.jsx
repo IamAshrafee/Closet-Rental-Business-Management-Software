@@ -150,11 +150,16 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
       className="bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-200 overflow-hidden"
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
+      role="button"
+      tabIndex="0"
+      onClick={() => setIsExpanded(!isExpanded)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setIsExpanded(!isExpanded);
+        }
+      }}
     >
-      <div 
-        className="p-5 cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
         {/* Header */}
         <div className="flex justify-between items-start mb-3">
           <div>

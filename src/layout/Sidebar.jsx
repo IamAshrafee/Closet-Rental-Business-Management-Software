@@ -99,6 +99,7 @@ const Sidebar = ({ children }) => {
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="p-2 rounded-lg bg-white shadow-md border border-gray-200"
+          aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
         >
           {isSidebarOpen ? <FiX size={20} /> : <FiMenu size={20} />}
         </button>

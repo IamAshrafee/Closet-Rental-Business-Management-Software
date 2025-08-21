@@ -139,28 +139,38 @@ const Login = () => {
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Email */}
             <div className="relative">
+              <label htmlFor="email" className="sr-only">Email Address</label>
               <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input 
                 type="email"
+                id="email"
+                name="email"
                 placeholder="Email Address"
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg ${emailError ? 'border-red-500' : 'border-gray-300'}`}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={!!emailError}
+                aria-describedby="email-error"
               />
-              {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+              {emailError && <p id="email-error" className="text-red-500 text-sm mt-1">{emailError}</p>}
             </div>
 
             {/* Password */}
             <div className="relative">
+              <label htmlFor="password" className="sr-only">Password</label>
               <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input 
                 type="password"
+                id="password"
+                name="password"
                 placeholder="Password"
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg ${passwordError ? 'border-red-500' : 'border-gray-300'}`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                aria-invalid={!!passwordError}
+                aria-describedby="password-error"
               />
-              {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
+              {passwordError && <p id="password-error" className="text-red-500 text-sm mt-1">{passwordError}</p>}
             </div>
 
             {/* Firebase Error */}

@@ -175,15 +175,19 @@ const Todo = () => {
         {/* Add Todo Form */}
         <form onSubmit={handleAddTodo} className="mb-8 p-4 bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <label htmlFor="newTodoTitle" className="sr-only">Todo Title</label>
             <input
               type="text"
+              id="newTodoTitle"
               value={newTodoTitle}
               onChange={(e) => setNewTodoTitle(e.target.value)}
               placeholder="Todo Title..."
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+            <label htmlFor="newTodoDescription" className="sr-only">Description</label>
             <input
               type="text"
+              id="newTodoDescription"
               value={newTodoDescription}
               onChange={(e) => setNewTodoDescription(e.target.value)}
               placeholder="Description (optional)..."
@@ -191,7 +195,9 @@ const Todo = () => {
             />
           </div>
           <div className="flex items-center">
+            <label htmlFor="assignedTo" className="sr-only">Assign to</label>
             <select
+              id="assignedTo"
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -251,14 +257,18 @@ const Todo = () => {
 
         {/* Todo Lists - Mobile View (Tabs) */}
         <div className="md:hidden flex flex-col flex-grow">
-          <div className="flex border-b border-gray-200 mb-4">
+          <div role="tablist" className="flex border-b border-gray-200 mb-4">
             <button
+              role="tab"
+              aria-selected={assignedTo === 'Tahmina'}
               className={`flex-1 px-4 py-2 text-sm font-medium ${assignedTo === 'Tahmina' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
               onClick={() => setAssignedTo('Tahmina')}
             >
               Tahmina
             </button>
             <button
+              role="tab"
+              aria-selected={assignedTo === 'Ashrafee'}
               className={`flex-1 px-4 py-2 text-sm font-medium ${assignedTo === 'Ashrafee' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500'}`}
               onClick={() => setAssignedTo('Ashrafee')}
             >

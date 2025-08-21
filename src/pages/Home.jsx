@@ -280,6 +280,15 @@ const Home = () => {
                 <div
                   key={booking.id}
                   className="flex items-center justify-between p-4 border-b last:border-b-0"
+                  role="button"
+                  tabIndex="0"
+                  onClick={() => navigate("/bookings")}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate("/bookings");
+                    }
+                  }}
                 >
                   <div>
                     <p className="font-medium">

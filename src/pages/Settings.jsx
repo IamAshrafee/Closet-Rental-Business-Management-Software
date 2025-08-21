@@ -214,13 +214,15 @@ const Settings = () => {
             <button 
               className="flex items-center justify-between w-full p-5 text-left"
               onClick={() => toggleSection('general')}
+              aria-expanded={expandedSections.general}
+              aria-controls="general-settings-content"
             >
               <h2 className="text-xl font-semibold text-gray-800">General Settings</h2>
               {expandedSections.general ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
             </button>
             
             {expandedSections.general && (
-              <div className="px-5 pb-5 space-y-5">
+              <div id="general-settings-content" className="px-5 pb-5 space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
@@ -311,13 +313,15 @@ const Settings = () => {
             <button 
               className="flex items-center justify-between w-full p-5 text-left"
               onClick={() => toggleSection('categories')}
+              aria-expanded={expandedSections.categories}
+              aria-controls="categories-content"
             >
               <h2 className="text-xl font-semibold text-gray-800">Manage Categories</h2>
               {expandedSections.categories ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
             </button>
             
             {expandedSections.categories && (
-              <div className="px-5 pb-5">
+              <div id="categories-content" className="px-5 pb-5">
                 <div className="flex flex-col md:flex-row gap-3 mb-5">
                   <input
                     type="text"
@@ -408,13 +412,15 @@ const Settings = () => {
             <button 
               className="flex items-center justify-between w-full p-5 text-left"
               onClick={() => toggleSection('colors')}
+              aria-expanded={expandedSections.colors}
+              aria-controls="colors-content"
             >
               <h2 className="text-xl font-semibold text-gray-800">Manage Colors</h2>
               {expandedSections.colors ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
             </button>
             
             {expandedSections.colors && (
-              <div className="px-5 pb-5">
+              <div id="colors-content" className="px-5 pb-5">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-5">
                   <div className="md:col-span-5">
                     <input

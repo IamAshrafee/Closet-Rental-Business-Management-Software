@@ -149,10 +149,12 @@ const AddPartnerPopup = ({ isOpen, onClose, partner }) => {
                       onChange={handleChange}
                       className={`block w-full border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm p-2 pl-9`}
                       placeholder="John Doe"
+                      aria-invalid={!!errors.name}
+                      aria-describedby="name-error"
                     />
                     <FiUser className="absolute left-3 top-3 text-gray-400" />
                   </div>
-                  {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                  {errors.name && <p id="name-error" className="mt-1 text-sm text-red-600">{errors.name}</p>}
                 </div>
 
                 <div>
@@ -168,10 +170,12 @@ const AddPartnerPopup = ({ isOpen, onClose, partner }) => {
                       onChange={handleChange}
                       className={`block w-full border ${errors.phone ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm p-2 pl-9`}
                       placeholder="01XXXXXXXXX"
+                      aria-invalid={!!errors.phone}
+                      aria-describedby="phone-error"
                     />
                     <FiPhone className="absolute left-3 top-3 text-gray-400" />
                   </div>
-                  {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                  {errors.phone && <p id="phone-error" className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                 </div>
 
                 <div>
@@ -187,10 +191,12 @@ const AddPartnerPopup = ({ isOpen, onClose, partner }) => {
                       onChange={handleChange}
                       className={`block w-full border ${errors.email ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm p-2 pl-9`}
                       placeholder="partner@example.com"
+                      aria-invalid={!!errors.email}
+                      aria-describedby="email-error"
                     />
                     <FiMail className="absolute left-3 top-3 text-gray-400" />
                   </div>
-                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                  {errors.email && <p id="email-error" className="mt-1 text-sm text-red-600">{errors.email}</p>}
                 </div>
 
                 <div>
@@ -206,10 +212,12 @@ const AddPartnerPopup = ({ isOpen, onClose, partner }) => {
                       rows={3}
                       className={`block w-full border ${errors.address ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm p-2 pl-9`}
                       placeholder="Full address"
+                      aria-invalid={!!errors.address}
+                      aria-describedby="address-error"
                     />
                     <FiMapPin className="absolute left-3 top-3 text-gray-400" />
                   </div>
-                  {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
+                  {errors.address && <p id="address-error" className="mt-1 text-sm text-red-600">{errors.address}</p>}
                 </div>
             </div>
           </div>

@@ -230,11 +230,13 @@ const Stock = () => {
         {/* Filters Section */}
         <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="relative">
+            <label htmlFor="searchTerm" className="sr-only">Search items</label>
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FiSearch className="text-gray-400" />
             </div>
             <input
               type="text"
+              id="searchTerm"
               placeholder="Search items..."
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               value={searchTerm}
@@ -244,10 +246,12 @@ const Stock = () => {
 
           <div className="flex gap-3">
             <div className="relative flex-1">
+              <label htmlFor="availabilityFilter" className="sr-only">Filter by availability</label>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <FiFilter className="text-gray-400" />
               </div>
               <select
+                id="availabilityFilter"
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
                 value={availabilityFilter}
                 onChange={(e) => setAvailabilityFilter(e.target.value)}
@@ -259,7 +263,9 @@ const Stock = () => {
             </div>
 
             <div className="relative flex-1">
+              <label htmlFor="sortOption" className="sr-only">Sort by</label>
               <select
+                id="sortOption"
                 className="pl-4 pr-8 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
@@ -312,6 +318,15 @@ const Stock = () => {
                   variants={itemVariants}
                   layout
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  role="button"
+                  tabIndex="0"
+                  onClick={() => handleOpenInfoModal(item)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleOpenInfoModal(item);
+                    }
+                  }}
                 >
                   <StockItemCard
                     item={item}

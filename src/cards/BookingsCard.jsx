@@ -147,7 +147,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
 
   return (
     <motion.div 
-      className="bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-200 overflow-hidden"
+      className="bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-200 overflow-hidden p-4"
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
       role="button"
@@ -161,7 +161,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
       }}
     >
         {/* Header */}
-        <div className="flex justify-between items-start mb-3">
+        <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-800">{customer.name}</h3>
             <p className="text-sm text-gray-500 flex items-center">
@@ -175,7 +175,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
         </div>
 
         {/* Quick Info */}
-        <div className="flex flex-col sm:flex-row sm:justify-between gap-2 mb-3">
+        <div className="flex flex-col sm:flex-row sm:justify-between gap-2 mb-4">
           <InfoLine 
             icon={<FiTruck size={14} />} 
             label="Delivery" 
@@ -191,7 +191,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
         </div>
 
         {/* Financial Summary */}
-        <div className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg">
+        <div className="flex justify-between items-center bg-gray-50 px-4 py-3 rounded-lg">
           <div className="flex items-center">
             <FiDollarSign className="text-gray-500 mr-2" size={14} />
             <span className="font-medium">{currency.symbol}{totalAmount.toFixed(2)}</span>
@@ -203,12 +203,11 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
             </div>
           )}
         </div>
-      </div>
 
       {/* Expanded Details */}
       {isExpanded && (
         <motion.div 
-          className="px-5 pb-5"
+          className="p-4"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
@@ -216,7 +215,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
         >
           <div className="border-t border-gray-200 pt-4 mb-4">
             {/* Detailed Dates */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-2 gap-6 mb-4">
               <div>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">Rent Period</h4>
                 <div className="space-y-1">
@@ -247,7 +246,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
             {notes && (
               <div className="mb-4">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">Notes</h4>
-                <p className="text-sm text-gray-700 bg-yellow-50 border border-yellow-100 p-2 rounded-md">
+                <p className="text-sm text-gray-700 bg-yellow-50 border border-yellow-100 p-3 rounded-md">
                   {notes}
                 </p>
               </div>
@@ -255,7 +254,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <div className="relative w-full sm:w-auto">
               <select
                 onChange={handleStatusChange}
@@ -306,7 +305,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
       )}
 
       {/* Footer - Quick Actions */}
-      <div className="border-t border-gray-200 px-5 py-3 bg-gray-50">
+      <div className="border-t border-gray-200 px-4 py-3 bg-gray-50">
         <div className="flex justify-between items-center">
           <button 
             onClick={() => setIsExpanded(!isExpanded)}

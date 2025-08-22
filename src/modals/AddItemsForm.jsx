@@ -773,14 +773,24 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
                   </div>
                 ) : imageUrl ? (
                   <div className="relative group">
-                    <img
-                      src={imageUrl}
-                      alt="Uploaded preview"
-                      className="h-40 object-contain rounded-md"
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <img
+                        src={imageUrl}
+                        alt="Uploaded preview"
+                        className="h-40 object-contain rounded-md"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <FiUploadCloud className="text-white text-2xl" />
+                      </div>
+                    </label>
+                    <input
+                      id="file-upload"
+                      name="file-upload"
+                      type="file"
+                      className="sr-only"
+                      onChange={handleFileChange}
+                      accept="image/jpeg,image/png,image/gif"
                     />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <FiUploadCloud className="text-white text-2xl" />
-                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center">

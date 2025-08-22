@@ -18,7 +18,7 @@ const ActiveBookingsPopup = ({
   onViewDetails,
 }) => {
   if (!isOpen) return null;
-  const formatDate = useFormatDate();
+  const { formatDate } = useFormatDate();
 
   const handleViewDetailsClick = (e, booking) => {
     e.stopPropagation();
@@ -34,7 +34,10 @@ const ActiveBookingsPopup = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={onClose}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
           style={{
             backdropFilter: "blur(6px)",
             WebkitBackdropFilter: "blur(4px)",

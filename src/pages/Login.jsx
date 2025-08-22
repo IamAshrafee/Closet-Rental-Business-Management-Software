@@ -1,5 +1,5 @@
 // Import React and hooks
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // Import icons
 import { FiLogIn, FiMail, FiLock } from 'react-icons/fi';
 // Import NavLink for navigation
@@ -7,6 +7,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 // Import Redux hooks
 import { useDispatch, useSelector } from 'react-redux';
 import { userLogInfo } from '../slice/userSlice';
+import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
 
 // Firebase imports
 import { initializeApp } from 'firebase/app';
@@ -42,6 +43,8 @@ const Login = () => {
 
   // Loading state for button
   const [loading, setLoading] = useState(false);
+  const formRef = useRef(null);
+  useAutoscrollOnFocus(formRef);
 
   // Navigation hook
   const navigate = useNavigate();
@@ -136,7 +139,7 @@ const Login = () => {
           <h2 className="text-3xl font-bold text-gray-800 mb-4">Login</h2>
           <p className="text-gray-500 mb-8">Access your Rentiva account.</p>
           
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form ref={formRef} className="space-y-6" onSubmit={handleSubmit}>
             {/* Email */}
             <div className="relative">
               <label htmlFor="email" className="sr-only">Email Address</label>

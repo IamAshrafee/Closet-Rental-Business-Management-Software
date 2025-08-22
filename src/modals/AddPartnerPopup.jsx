@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiUser, FiPhone, FiMail, FiMapPin, FiEdit2 } from 'react-icons/fi';
 import { getDatabase, ref, push, set, update } from 'firebase/database';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
+import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
 
 const AddPartnerPopup = ({ isOpen, onClose, partner }) => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,8 @@ const AddPartnerPopup = ({ isOpen, onClose, partner }) => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef(null);
+  useAutoscrollOnFocus(formRef);
 
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
@@ -101,6 +104,7 @@ const AddPartnerPopup = ({ isOpen, onClose, partner }) => {
         onClick={onClose}
       >
         <motion.form
+          ref={formRef}
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -20, opacity: 0 }}

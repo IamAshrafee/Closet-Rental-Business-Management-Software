@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiPlus, FiTrash2, FiUser, FiBox, FiCalendar, FiDollarSign, FiFileText, FiChevronDown, FiCheck, FiInfo } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,6 +6,7 @@ import { getDatabase, ref, onValue, push, set, update, get } from 'firebase/data
 import { useSelector } from 'react-redux';
 import Select from 'react-select';
 import CustomDatePicker from '../components/CustomDatePicker';
+import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
 
 // Reusable UI Components
 const FormSection = ({ title, icon, children, required = false }) => (
@@ -124,6 +125,8 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   const [colorFilter, setColorFilter] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [showAvailableOnly, setShowAvailableOnly] = useState(true);
+  const formRef = useRef(null);
+  useAutoscrollOnFocus(formRef);
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const colors = useSelector((state) => state.color.value);
@@ -577,6 +580,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
       </AnimatePresence>
       
       <form 
+        ref={formRef} 
         className="bg-gray-100 w-full h-full flex flex-col md:rounded-xl md:shadow-2xl md:w-11/12 md:max-w-5xl md:max-h-[90vh]" 
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}

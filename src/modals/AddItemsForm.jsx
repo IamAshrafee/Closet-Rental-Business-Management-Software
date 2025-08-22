@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiUploadCloud } from 'react-icons/fi';
 import { getDatabase, ref, onValue, push, set, update } from 'firebase/database';
@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CreatableSelect from 'react-select/creatable';
 import { setColors } from '../slice/colorSlice';
 import { setCategories } from '../slice/categorySlice';
+import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
 
 import CustomDatePicker from '../components/CustomDatePicker';
 
@@ -64,6 +65,8 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
   const categories = useSelector((state) => state.category.value);
   const colors = useSelector((state) => state.color.value);
   const dispatch = useDispatch();
+  const formRef = useRef(null);
+  useAutoscrollOnFocus(formRef);
   const initialFormData = {
     name: '',
     category: '',
@@ -381,6 +384,7 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
         onClick={onClose}
       >
         <motion.form
+          ref={formRef}
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}

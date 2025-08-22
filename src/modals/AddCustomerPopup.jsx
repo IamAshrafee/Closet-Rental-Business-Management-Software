@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiUser, FiPhone, FiLink, FiMapPin, FiEdit2 } from 'react-icons/fi';
 import { getDatabase, ref, push, set, update } from 'firebase/database';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
+import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
 
 const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
   const [formData, setFormData] = useState({
@@ -20,6 +21,8 @@ const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
+  const formRef = useRef(null);
+  useAutoscrollOnFocus(formRef);
 
   const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
@@ -156,6 +159,7 @@ const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
         onClick={onClose}
       >
         <motion.form
+          ref={formRef}
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -20, opacity: 0 }}

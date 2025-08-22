@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FiUserPlus, FiUser, FiMail, FiLock } from "react-icons/fi";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useSelector } from 'react-redux';
+import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
 
 import {
   initializeApp
@@ -42,6 +43,8 @@ const Registration = () => {
   const [firebaseError, setFirebaseError] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const formRef = useRef(null);
+  useAutoscrollOnFocus(formRef);
 
   const navigate = useNavigate();
 
@@ -141,7 +144,7 @@ const Registration = () => {
             Let's get you started with a new account.
           </p>
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form ref={formRef} className="space-y-6" onSubmit={handleSubmit}>
             <div className="relative">
               <label htmlFor="fullName" className="sr-only">Full Name</label>
               <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

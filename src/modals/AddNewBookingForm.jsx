@@ -2,11 +2,13 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { IoMdClose } from 'react-icons/io';
 import { FiPlus, FiTrash2, FiUser, FiBox, FiCalendar, FiDollarSign, FiFileText, FiChevronDown, FiCheck, FiInfo } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getDatabase, ref, onValue, push, set, update, get } from 'firebase/database';
+import { ref, onValue, push, set, update, get } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 import { useSelector } from 'react-redux';
 import Select from 'react-select';
 import CustomDatePicker from '../components/CustomDatePicker';
 import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
+import { useUpdateCustomerStats } from '../hooks/useUpdateCustomerStats';
 
 // Reusable UI Components
 const FormSection = ({ title, icon, children, required = false }) => (
@@ -127,10 +129,10 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   const [showAvailableOnly, setShowAvailableOnly] = useState(true);
   const formRef = useRef(null);
   useAutoscrollOnFocus(formRef);
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const colors = useSelector((state) => state.color.value);
   const categories = useSelector((state) => state.category.value);
+  const updateCustomerStats = useUpdateCustomerStats();
 
   useEffect(() => {
     if (isOpen) {
@@ -186,7 +188,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
         }
       });
     }
-  }, [db, userInfo]);
+  }, [userInfo]);
 
   const filteredStockItems = useMemo(() => {
     const { startDate, endDate } = bookingDetails;
@@ -353,42 +355,38 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   };
 
   // Validate form
-  const validateForm = () => {
+  const validateForm = (isDraft = false) => {
     const newErrors = {};
     
-    // Customer validation
     if (!bookingDetails.customerId) {
       newErrors.customerId = 'Please select a customer';
     }
 
-    if (!bookingDetails.deliveryDate) {
-      newErrors.deliveryDate = 'Delivery date is required';
-    }
+    if (!isDraft) {
+      if (!bookingDetails.deliveryDate) {
+        newErrors.deliveryDate = 'Delivery date is required';
+      }
 
-    if (!bookingDetails.returnDate) {
-      newErrors.returnDate = 'Return date is required';
-    }
+      if (!bookingDetails.returnDate) {
+        newErrors.returnDate = 'Return date is required';
+      }
 
-    if (!bookingDetails.startDate) {
-      newErrors.startDate = 'Rent Start date is required';
-    }
+      if (!bookingDetails.startDate) {
+        newErrors.startDate = 'Rent Start date is required';
+      }
 
-    if (!bookingDetails.endDate) {
-      newErrors.endDate = 'Rent End date is required';
-    }
+      if (!bookingDetails.endDate) {
+        newErrors.endDate = 'Rent End date is required';
+      }
 
-    if (bookingDetails.startDate && bookingDetails.endDate && new Date(bookingDetails.startDate) > new Date(bookingDetails.endDate)) {
-      newErrors.endDate = 'Rent End date must be after Rent Start date';
-    }
+      if (bookingDetails.startDate && bookingDetails.endDate && new Date(bookingDetails.startDate) > new Date(bookingDetails.endDate)) {
+        newErrors.endDate = 'Rent End date must be after Rent Start date';
+      }
 
-    if (bookingDetails.deliveryDate && bookingDetails.returnDate && new Date(bookingDetails.deliveryDate) > new Date(bookingDetails.returnDate)) {
-      newErrors.returnDate = 'Return date must be after Delivery date';
-    }
-    
-    // Items validation
-    if (bookingDetails.items.length === 0) {
-      newErrors.items = 'At least one item is required';
-    } else {
+      if (bookingDetails.deliveryDate && bookingDetails.returnDate && new Date(bookingDetails.deliveryDate) > new Date(bookingDetails.returnDate)) {
+        newErrors.returnDate = 'Return date must be after Delivery date';
+      }
+      
       bookingDetails.items.forEach((item, index) => {
         if (!item.itemId) {
           newErrors[`items.${index}.itemId`] = 'Please select an item';
@@ -397,26 +395,23 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
           newErrors[`items.${index}.price`] = 'Price is required';
         }
       });
-    }
-    
-    // Delivery validation
-    if (bookingDetails.deliveryType === 'HomeDelivery' && !bookingDetails.address.trim()) {
-      newErrors.address = 'Address is required for home delivery';
-    }
-    
-    // Advance validation
-    bookingDetails.advances.forEach((advance, index) => {
-      if (advance.amount && isNaN(Number(advance.amount))) {
-        newErrors[`advances.${index}.amount`] = 'Please enter a valid amount';
+      
+      if (bookingDetails.deliveryType === 'HomeDelivery' && !bookingDetails.address.trim()) {
+        newErrors.address = 'Address is required for home delivery';
       }
-    });
-    
-    // Numeric validation
-    if (bookingDetails.deliveryCharge && isNaN(Number(bookingDetails.deliveryCharge))) {
-      newErrors.deliveryCharge = 'Please enter a valid amount';
-    }
-    if (bookingDetails.otherCharges && isNaN(Number(bookingDetails.otherCharges))) {
-      newErrors.otherCharges = 'Please enter a valid amount';
+      
+      bookingDetails.advances.forEach((advance, index) => {
+        if (advance.amount && isNaN(Number(advance.amount))) {
+          newErrors[`advances.${index}.amount`] = 'Please enter a valid amount';
+        }
+      });
+      
+      if (bookingDetails.deliveryCharge && isNaN(Number(bookingDetails.deliveryCharge))) {
+        newErrors.deliveryCharge = 'Please enter a valid amount';
+      }
+      if (bookingDetails.otherCharges && isNaN(Number(bookingDetails.otherCharges))) {
+        newErrors.otherCharges = 'Please enter a valid amount';
+      }
     }
     
     setErrors(newErrors);
@@ -424,9 +419,8 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   };
 
   // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) {
+  const handleSave = async (isDraft = false) => {
+    if (!validateForm(isDraft)) {
       setAlert({ show: true, type: 'error', message: 'Please fill all the required fields and correct the errors.' });
       return;
     }
@@ -461,7 +455,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
       totalAmount,
       totalAdvance,
       dueAmount,
-      status: booking ? booking.status : 'Waiting for Delivery' // Initial status
+      status: isDraft ? 'Draft' : (booking ? booking.status : 'Waiting for Delivery')
     };
     
     try {
@@ -477,9 +471,8 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
         setAlert({ show: true, type: 'success', message: 'Booking created successfully!' });
       }
 
-      await updateCustomerStats(bookingDetails.customerId);
+      await updateCustomerStats(bookingDetails.customerId, allBookings);
       
-      // Close form after a delay
       setTimeout(() => {
         onClose();
       }, 2000);
@@ -490,25 +483,14 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
     }
   };
 
-  const updateCustomerStats = async (customerId) => {
-    const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
-    const snapshot = await get(bookingsRef);
-    const allBookings = snapshot.val() || {};
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    handleSave(false);
+  };
 
-    const customerBookings = Object.values(allBookings).filter(b => b.customerId === customerId);
-
-    const totalSpent = customerBookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0);
-    const totalBookings = customerBookings.length;
-    const totalOutstanding = customerBookings.reduce((acc, b) => acc + (b.dueAmount > 0 ? b.dueAmount : 0), 0);
-    const activeBookings = customerBookings.filter(b => b.status !== 'Completed').length;
-
-    const customerRef = ref(db, `users/${userInfo.uid}/customers/${customerId}`);
-    await update(customerRef, {
-      totalSpent,
-      totalBookings,
-      totalOutstanding,
-      activeBookings
-    });
+  const handleSaveDraft = (e) => {
+    e.preventDefault();
+    handleSave(true);
   };
 
   // Reset form
@@ -537,7 +519,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   );
   
   const totalAdvance = useMemo(() => 
-    bookingDetails.advances.reduce((total, advance) => total + Number(advance.amount || 0), 0), 
+    (bookingDetails.advances || []).reduce((total, advance) => total + Number(advance.amount || 0), 0), 
     [bookingDetails.advances]
   );
   
@@ -933,6 +915,14 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
             className="bg-gray-200 text-gray-800 px-6 py-2.5 rounded-md hover:bg-gray-300 font-semibold transition-colors"
           >
             Cancel
+          </button>
+          <button 
+            type="button" 
+            onClick={handleSaveDraft} 
+            disabled={submitting}
+            className="bg-yellow-500 text-white px-6 py-2.5 rounded-md hover:bg-yellow-600 font-semibold transition-colors flex items-center disabled:opacity-70"
+          >
+            {submitting ? 'Saving...' : 'Save as Draft'}
           </button>
           <button 
             type="submit" 

@@ -6,7 +6,8 @@ import { FiTag, FiGrid, FiMaximize2, FiDroplet, FiCalendar, FiMapPin,
 import { FaUserTie } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
-import { getDatabase, ref, onValue } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 
 const DetailItem = ({ icon, label, value, className = '', highlight }) => {
     if (!value && value !== 0) return null;
@@ -31,7 +32,6 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
     const currency = useSelector((state) => state.currency.value);
     const colorsList = useSelector((state) => state.color.value);
     const userInfo = useSelector((state) => state.userLogInfo.value);
-    const db = getDatabase();
     const { formatDate } = useFormatDate();
 
     const [partners, setPartners] = useState([]);
@@ -44,7 +44,7 @@ const ItemInformationPopup = ({ item, onClose, onEdit }) => {
                 setPartners(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
             });
         }
-    }, [db, userInfo]);
+    }, [userInfo]);
 
     if (!item) return null;
 

@@ -7,7 +7,8 @@ import { setDateTimeFormat } from '../slice/dateTimeSlice';
 import { setCategories } from '../slice/categorySlice';
 import { setColors } from '../slice/colorSlice';
 import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiChevronDown, FiChevronUp, FiInfo } from 'react-icons/fi';
-import { getDatabase, ref, onValue, set } from 'firebase/database';
+import { ref, onValue, set } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 
 const currencies = [
   { symbol: '$', code: 'USD', name: 'US Dollar' },
@@ -35,7 +36,6 @@ const capitalize = (s) => s && s.charAt(0).toUpperCase() + s.slice(1);
 const Settings = () => {
   const dispatch = useDispatch();
   const userInfo = useSelector((state) => state.userLogInfo.value);
-  const db = getDatabase();
   const selectedCurrency = useSelector((state) => state.currency.value);
   const companyName = useSelector((state) => state.company.value);
   const selectedDateTimeFormat = useSelector((state) => state.dateTime.value);
@@ -82,7 +82,7 @@ const Settings = () => {
         }
       });
     }
-  }, [db, userInfo, dispatch]);
+  }, [userInfo, dispatch]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({

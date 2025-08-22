@@ -11,7 +11,8 @@ import {
   FiHash,
   FiInfo,
 } from "react-icons/fi";
-import { getDatabase, ref, get } from "firebase/database";
+import { ref, get } from "firebase/database";
+import { db } from "../authentication/firebaseConfig";
 import { useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormatDate } from "../hooks/useFormatDate";
@@ -39,7 +40,6 @@ const InfoPair = ({ label, value, className = "" }) => (
 const BookingInformationPopup = ({ booking, onClose }) => {
   const [customer, setCustomer] = useState(null);
   const [detailedItems, setDetailedItems] = useState([]);
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const currency = useSelector((state) => state.currency.value);
   const { formatDate, formatTime } = useFormatDate();
@@ -70,7 +70,7 @@ const BookingInformationPopup = ({ booking, onClose }) => {
         setDetailedItems(itemsData);
       });
     }
-  }, [db, userInfo, booking]);
+  }, [userInfo, booking]);
 
   if (!booking) return null;
 

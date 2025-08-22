@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiUser, FiPhone, FiLink, FiMapPin, FiEdit2 } from 'react-icons/fi';
-import { getDatabase, ref, push, set, update } from 'firebase/database';
+import { ref, push, set, update } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
@@ -16,7 +17,8 @@ const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
     parentNid: '',
     husbandNid: '',
     fbId: '',
-    address: ''
+    address: '',
+    status: 'complete',
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,7 +26,6 @@ const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
   const formRef = useRef(null);
   useAutoscrollOnFocus(formRef);
 
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
@@ -39,7 +40,8 @@ const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
           parentNid: customer.parentNid || '',
           husbandNid: customer.husbandNid || '',
           fbId: customer.fbId || '',
-          address: customer.address || ''
+          address: customer.address || '',
+          status: customer.status || 'complete',
         });
       } else {
         // Reset form when opening for new customer
@@ -60,20 +62,21 @@ const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
     }
   }, [customer, isOpen]);
 
-  const validateForm = () => {
+  const validateForm = (isDraft = false) => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
-    if (formData.phone && !/^\d+$/.test(formData.phone)) newErrors.phone = 'Invalid phone number';
-    if (formData.altPhone && !/^\d+$/.test(formData.altPhone)) newErrors.altPhone = 'Invalid phone number';
-    if (formData.parentNidType && !formData.parentNid) newErrors.parentNid = 'Parent NID is required when type is selected';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
 
-    // Check for duplicate phone number
-    if (customers && customers.some(c => c.phone === formData.phone && c.id !== (customer && customer.id))) {
-      newErrors.phone = 'A customer with this phone number already exists.';
+    if (!isDraft) {
+      if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
+      if (formData.phone && !/^\d+$/.test(formData.phone)) newErrors.phone = 'Invalid phone number';
+      if (formData.altPhone && !/^\d+$/.test(formData.altPhone)) newErrors.altPhone = 'Invalid phone number';
+      if (formData.parentNidType && !formData.parentNid) newErrors.parentNid = 'Parent NID is required when type is selected';
+      if (!formData.address.trim()) newErrors.address = 'Address is required';
+
+      if (customers && customers.some(c => c.phone === formData.phone && c.id !== (customer && customer.id))) {
+        newErrors.phone = 'A customer with this phone number already exists.';
+      }
     }
-
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -110,23 +113,21 @@ const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  const handleSave = async (isDraft = false) => {
+    if (!validateForm(isDraft)) return;
 
     setIsSubmitting(true);
     try {
       const customerData = {
         ...formData,
-        updatedAt: new Date().toISOString()
+        status: isDraft ? 'draft' : 'complete',
+        updatedAt: new Date().toISOString(),
       };
 
       if (customer) {
-        // Update existing customer
         const customerRef = ref(db, `users/${userInfo.uid}/customers/${customer.id}`);
         await update(customerRef, customerData);
       } else {
-        // Add new customer
         const customersRef = ref(db, `users/${userInfo.uid}/customers`);
         const newCustomerRef = push(customersRef);
         await set(newCustomerRef, {
@@ -135,7 +136,7 @@ const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
           totalSpent: 0,
           totalBookings: 0,
           activeBookings: 0,
-          totalOutstanding: 0
+          totalOutstanding: 0,
         });
       }
       onClose();
@@ -145,6 +146,16 @@ const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    handleSave(false);
+  };
+
+  const handleSaveDraft = (e) => {
+    e.preventDefault();
+    handleSave(true);
   };
 
   if (!isOpen) return null;
@@ -407,6 +418,14 @@ const AddCustomerPopup = ({ isOpen, onClose, customer, customers }) => {
               disabled={isSubmitting}
             >
               Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              className="px-4 py-2 border border-indigo-200 rounded-md shadow-sm text-sm font-medium text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Save as Draft'}
             </button>
             <button
               type="submit"

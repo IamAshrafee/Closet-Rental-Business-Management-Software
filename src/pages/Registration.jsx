@@ -5,28 +5,12 @@ import { useSelector } from 'react-redux';
 import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
 
 import {
-  initializeApp
-} from "firebase/app";
-import {
-  getAuth,
   createUserWithEmailAndPassword,
   updateProfile,
   sendEmailVerification,
 } from "firebase/auth";
-import { getDatabase, ref, set } from "firebase/database";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDgFLWJLTz3tF40NjNBl8s9eLd6OLk3WiM",
-  authDomain: "closet-rental-business.firebaseapp.com",
-  projectId: "closet-rental-business",
-  storageBucket: "closet-rental-business.firebasestorage.app",
-  messagingSenderId: "145160803642",
-  appId: "1:145160803642:web:d0beae89249c73e44c6c03",
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+import { ref, set } from "firebase/database";
+import { auth, db } from "../authentication/firebaseConfig";
 
 const Registration = () => {
   const userInfo = useSelector((state) => state.userLogInfo.value);

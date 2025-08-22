@@ -3,7 +3,8 @@ import Sidebar from "../layout/Sidebar";
 import AddPartnerPopup from "../modals/AddPartnerPopup";
 import PartnerCard from "../cards/PartnerCard";
 import { useSelector } from "react-redux";
-import { getDatabase, ref, onValue, remove } from "firebase/database";
+import { ref, onValue, remove } from "firebase/database";
+import { db } from "../authentication/firebaseConfig";
 import { FiPlus, FiSearch } from "react-icons/fi";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -16,7 +17,6 @@ const Partners = () => {
   const [editingPartner, setEditingPartner] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const Partners = () => {
         unsubscribePartners();
       };
     }
-  }, [db, userInfo]);
+  }, [userInfo]);
 
   const filteredPartners = useMemo(() => {
     if (!searchQuery) return partners;

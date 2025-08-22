@@ -4,7 +4,8 @@ import UpcomingDeliveriesCard from '../cards/UpcomingDeliveriesCard';
 import UpcomingReturnsCard from '../cards/UpcomingReturnsCard';
 import DeliveryInformationPopup from '../modals/DeliveryInformationPopup';
 import { useSelector } from 'react-redux';
-import { getDatabase, ref, onValue } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiClock, FiTruck, FiRepeat } from 'react-icons/fi';
 
@@ -16,7 +17,6 @@ const Reminders = () => {
   const [stockItems, setStockItems] = useState([]);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [activeTab, setActiveTab] = useState('deliveries');
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const { formatDate } = useFormatDate();
 
@@ -47,7 +47,7 @@ const Reminders = () => {
       unsubscribeCustomers();
       unsubscribeItems();
     };
-  }, [db, userInfo]);
+  }, [userInfo]);
 
   const deliveries = useMemo(() => {
     return bookings

@@ -14,15 +14,26 @@ const useAutoscrollOnFocus = (formRef) => {
       const target = event.target;
       // Check if the focused element is an input, textarea, or select
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
-        // A timeout is used to allow the virtual keyboard to animate in on mobile devices
-        // before scrolling the element into view.
-        setTimeout(() => {
-          target.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest',
-          });
-        }, 300);
+        const visualViewport = window.visualViewport;
+        if (visualViewport) {
+          const handleViewportChange = () => {
+            target.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+              inline: 'nearest',
+            });
+          };
+          visualViewport.addEventListener('resize', handleViewportChange, { once: true });
+        } else {
+          // Fallback for older browsers
+          setTimeout(() => {
+            target.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+              inline: 'nearest',
+            });
+          }, 300);
+        }
       }
     };
 

@@ -1,16 +1,12 @@
-import { getDatabase, ref, get, update } from 'firebase/database';
+import { ref, update } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 import { useSelector } from 'react-redux';
 
 export const useUpdateCustomerStats = () => {
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
-  const updateStats = async (customerId) => {
+  const updateStats = async (customerId, allBookings) => {
     if (!userInfo || !customerId) return;
-
-    const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
-    const snapshot = await get(bookingsRef);
-    const allBookings = snapshot.val() || {};
 
     const customerBookings = Object.values(allBookings).filter(b => b.customerId === customerId);
 

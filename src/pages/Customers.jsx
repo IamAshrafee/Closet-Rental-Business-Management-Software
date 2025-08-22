@@ -5,7 +5,8 @@ import CustomerCard from "../cards/CustomerCard";
 import CustomerInformationPopup from "../modals/CustomerInformationPopup";
 import CustomerHistoryPopup from "../modals/CustomerHistoryPopup";
 import { useSelector } from "react-redux";
-import { getDatabase, ref, onValue, remove } from "firebase/database";
+import { ref, onValue, remove } from "firebase/database";
+import { db } from "../authentication/firebaseConfig";
 import { FiPlus, FiSearch } from "react-icons/fi";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -23,7 +24,7 @@ const Customers = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState("All");
-  const db = getDatabase();
+  const [viewFilter, setViewFilter] = useState("complete"); // complete, drafts
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
@@ -54,7 +55,7 @@ const Customers = () => {
         unsubscribeItems();
       };
     }
-  }, [db, userInfo]);
+  }, [userInfo]);
 
   const customerStats = useMemo(() => {
     return customers.map(customer => {
@@ -76,9 +77,14 @@ const Customers = () => {
   }, [customers, bookings]);
 
   const filteredCustomers = useMemo(() => {
-    if (!searchQuery) return customerStats;
-    const query = searchQuery.toLowerCase();
     return customerStats.filter((customer) => {
+      // View filter
+      if (viewFilter === "complete" && customer.status === "draft") return false;
+      if (viewFilter === "drafts" && customer.status !== "draft") return false;
+
+      // Search filter
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
       switch (searchCategory) {
         case "Name":
           return customer.name?.toLowerCase().includes(query) || false;
@@ -91,7 +97,7 @@ const Customers = () => {
           );
       }
     });
-  }, [customerStats, searchQuery, searchCategory]);
+  }, [customerStats, searchQuery, searchCategory, viewFilter]);
 
   const handleOpenAddModal = () => {
     setEditingCustomer(null);
@@ -169,6 +175,15 @@ const Customers = () => {
               <option value="All">All</option>
               <option value="Name">Name</option>
               <option value="Phone">Phone</option>
+            </select>
+            <select
+              id="viewFilter"
+              value={viewFilter}
+              onChange={(e) => setViewFilter(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="complete">Complete</option>
+              <option value="drafts">Drafts</option>
             </select>
             <button
               onClick={handleOpenAddModal}

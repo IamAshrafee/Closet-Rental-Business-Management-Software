@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Sidebar from '../layout/Sidebar';
 import { useSelector } from 'react-redux';
-import { getDatabase, ref, onValue } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 import { FiUsers, FiDollarSign } from 'react-icons/fi';
 
 const PartnerPayouts = () => {
@@ -10,7 +11,6 @@ const PartnerPayouts = () => {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const currency = useSelector((state) => state.currency.value);
 
@@ -37,7 +37,7 @@ const PartnerPayouts = () => {
         setIsLoading(false);
       });
     }
-  }, [db, userInfo]);
+  }, [userInfo]);
 
   const payoutData = useMemo(() => {
     if (isLoading || partners.length === 0) return [];
@@ -51,7 +51,7 @@ const PartnerPayouts = () => {
       partnerItemsCount = partnerItems.length;
 
       bookings.forEach(booking => {
-        booking.items.forEach(itemInBooking => {
+        (booking.items || []).forEach(itemInBooking => {
           if (itemInBooking.isCollaborated && itemInBooking.ownerId === partner.id) {
             totalRevenue += itemInBooking.calculatedPrice || 0;
             ownerShare += itemInBooking.ownerShare || 0;

@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Navigate, Outlet } from 'react-router-dom';
-import { getDatabase, ref, onValue } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
+import { db } from './firebaseConfig';
 import { setCategories } from '../slice/categorySlice';
 import { setColors } from '../slice/colorSlice';
 import { setCurrency } from '../slice/currencySlice';
@@ -11,7 +12,6 @@ import { setDateTimeFormat } from '../slice/dateTimeSlice';
 const PrivateRoute = () => {
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const dispatch = useDispatch();
-  const db = getDatabase();
 
   useEffect(() => {
     if (userInfo) {
@@ -37,7 +37,7 @@ const PrivateRoute = () => {
         }
       });
     }
-  }, [db, userInfo, dispatch]);
+  }, [userInfo, dispatch]);
 
   return userInfo ? <Outlet /> : <Navigate to="/login" replace />;
 };

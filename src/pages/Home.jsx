@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../layout/Sidebar";
 import { useSelector } from "react-redux";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { ref, onValue } from "firebase/database";
+import { db } from "../authentication/firebaseConfig";
 import {
   FiUsers,
   FiBox,
@@ -91,7 +92,6 @@ const Home = () => {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
 
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const currency = useSelector((state) => state.currency.value);
   const { formatDate } = useFormatDate();
@@ -103,51 +103,53 @@ const Home = () => {
       const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
       const itemsRef = ref(db, `users/${userInfo.uid}/items`);
 
-      const unsubscribeCustomers = onValue(customersRef, (snapshot) => {
+      const customersListener = onValue(customersRef, (snapshot) => {
         const data = snapshot.val() || {};
         const customersList = Object.keys(data).map((key) => ({
           id: key,
           ...data[key],
         }));
         setCustomers(customersList);
-        setStats((prev) => ({ ...prev, totalCustomers: customersList.length }));
       });
 
-      const unsubscribeBookings = onValue(bookingsRef, (snapshot) => {
+      const bookingsListener = onValue(bookingsRef, (snapshot) => {
         const data = snapshot.val() || {};
         const bookingsList = Object.keys(data).map((key) => ({
           id: key,
           ...data[key],
         }));
         setBookings(bookingsList);
-        setStats((prev) => ({
-          ...prev,
-          totalBookings: bookingsList.length,
-          totalRevenue: bookingsList.reduce(
-            (acc, b) => acc + (b.totalAmount || 0),
-            0
-          ),
-        }));
       });
 
-      const unsubscribeItems = onValue(itemsRef, (snapshot) => {
+      const itemsListener = onValue(itemsRef, (snapshot) => {
         const data = snapshot.val() || {};
         const itemsList = Object.keys(data).map((key) => ({
           id: key,
           ...data[key],
         }));
         setItems(itemsList);
-        setStats((prev) => ({ ...prev, totalItems: itemsList.length }));
+      });
+
+      Promise.all([customersListener, bookingsListener, itemsListener]).then(() => {
         setIsLoading(false);
       });
 
       return () => {
-        unsubscribeCustomers();
-        unsubscribeBookings();
-        unsubscribeItems();
+        customersListener();
+        bookingsListener();
+        itemsListener();
       };
     }
-  }, [db, userInfo]);
+  }, [userInfo]);
+
+  useEffect(() => {
+    setStats({
+      totalCustomers: customers.length,
+      totalBookings: bookings.length,
+      totalItems: items.length,
+      totalRevenue: bookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0),
+    });
+  }, [customers, bookings, items]);
 
   const navigate = useNavigate();
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiUploadCloud } from 'react-icons/fi';
-import { getDatabase, ref, onValue, push, set, update } from 'firebase/database';
+import { ref, onValue, push, set, update } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import CreatableSelect from 'react-select/creatable';
@@ -92,7 +93,8 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
     description: '',
     photo: '',
     isCollaborated: false,
-    ownerId: ''
+    ownerId: '',
+    status: 'published'
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -109,7 +111,6 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#3b82f6');
 
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
@@ -120,7 +121,7 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
             setPartners(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
         });
     }
-  }, [db, userInfo]);
+  }, [userInfo]);
 
   useEffect(() => {
     if (stockItems && stockItems.length > 0) {
@@ -315,54 +316,61 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
     setNewColorHex('#3b82f6');
   };
 
-  const validateForm = () => {
+  const validateForm = (isDraft = false) => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.category) newErrors.category = 'Category is required';
-    if (formData.isCollaborated && !formData.ownerId) newErrors.ownerId = 'Please select a partner';
-    if (!formData.purchasePrice) newErrors.purchasePrice = 'Purchase price is required';
-    if (!formData.target) newErrors.target = 'Target is required';
-    
-    if (formData.sizeOption === 'fixed' && !formData.sizeValue.trim()) {
-      newErrors.sizeValue = 'Size value is required';
-    }
-    if (formData.sizeOption === 'range') {
-      if (!formData.sizeFrom.trim()) newErrors.sizeFrom = 'From value is required';
-      if (!formData.sizeTo.trim()) newErrors.sizeTo = 'To value is required';
-    }
-    
-    if (formData.rentOption === 'fixed' && !formData.rentValue) {
-      newErrors.rentValue = 'Rent price is required';
-    }
-    if (formData.rentOption === 'per-day' && !formData.rentPerDay) {
-      newErrors.rentPerDay = 'Price per day is required';
-    }
-    if (formData.rentOption === 'range') {
-      if (!formData.rentFrom) newErrors.rentFrom = 'From value is required';
-      if (!formData.rentTo) newErrors.rentTo = 'To value is required';
-    }
-    
-    if (formData.availability === 'not-available' && !formData.availableFrom) {
-      newErrors.availableFrom = 'Available date is required';
+
+    if (!isDraft) {
+      if (!formData.category) newErrors.category = 'Category is required';
+      if (formData.isCollaborated && !formData.ownerId) newErrors.ownerId = 'Please select a partner';
+      if (!formData.purchasePrice) newErrors.purchasePrice = 'Purchase price is required';
+      if (!formData.target) newErrors.target = 'Target is required';
+      
+      if (formData.sizeOption === 'fixed' && !formData.sizeValue.trim()) {
+        newErrors.sizeValue = 'Size value is required';
+      }
+      if (formData.sizeOption === 'range') {
+        if (!formData.sizeFrom.trim()) newErrors.sizeFrom = 'From value is required';
+        if (!formData.sizeTo.trim()) newErrors.sizeTo = 'To value is required';
+      }
+      
+      if (formData.rentOption === 'fixed' && !formData.rentValue) {
+        newErrors.rentValue = 'Rent price is required';
+      }
+      if (formData.rentOption === 'per-day' && !formData.rentPerDay) {
+        newErrors.rentPerDay = 'Price per day is required';
+      }
+      if (formData.rentOption === 'range') {
+        if (!formData.rentFrom) newErrors.rentFrom = 'From value is required';
+        if (!formData.rentTo) newErrors.rentTo = 'To value is required';
+      }
+      
+      if (formData.availability === 'not-available' && !formData.availableFrom) {
+        newErrors.availableFrom = 'Available date is required';
+      }
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  const handleSave = async (isDraft = false) => {
+    if (!validateForm(isDraft)) return;
     
     setIsSubmitting(true);
+    const dataToSave = {
+      ...formData,
+      status: isDraft ? 'draft' : 'published',
+    };
+
     try {
       if (item) {
         const itemRef = ref(db, `users/${userInfo.uid}/items/${item.id}`);
-        await update(itemRef, formData);
+        await update(itemRef, dataToSave);
       } else {
         const itemsRef = ref(db, `users/${userInfo.uid}/items`);
         const newItemRef = push(itemsRef);
-        await set(newItemRef, { ...formData, rented: 0 });
+        await set(newItemRef, { ...dataToSave, rented: 0 });
       }
       onClose();
     } catch (error) {
@@ -370,6 +378,16 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    handleSave(false);
+  };
+
+  const handleSaveDraft = (e) => {
+    e.preventDefault();
+    handleSave(true);
   };
 
   if (!isOpen) return null;
@@ -852,13 +870,23 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
               Cancel
             </motion.button>
             <motion.button
+              type="button"
+              onClick={handleSaveDraft}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={isUploading || isSubmitting}
+              className="px-4 py-2 rounded-md border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Saving...' : 'Save as Draft'}
+            </motion.button>
+            <motion.button
               type="submit"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               disabled={isUploading || isSubmitting}
               className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isUploading ? 'Uploading...' : isSubmitting ? 'Saving...' : 'Save Item'}
+              {isUploading ? 'Uploading...' : isSubmitting ? 'Saving...' : (item && item.status === 'draft' ? 'Publish' : 'Save Item')}
             </motion.button>
           </div>
         </motion.form>

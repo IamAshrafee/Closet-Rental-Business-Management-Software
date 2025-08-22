@@ -81,13 +81,19 @@ const CustomerCard = ({ customer, onEdit, onDelete, onHistoryClick }) => {
     activeBookings = 0,
     totalOutstanding = 0,
     createdAt,
-    loyaltyPoints = 0
+    loyaltyPoints = 0,
+    status,
   } = customer;
 
   return (
     <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 ease-in-out overflow-hidden border border-gray-100 hover:border-gray-200 flex flex-col h-full">
       {/* Header Section */}
       <div className="p-5 pb-3 flex-grow">
+        {status === 'draft' && (
+          <div className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full font-semibold">
+            Draft
+          </div>
+        )}
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center space-x-3">
             <div className="bg-indigo-100 p-3 rounded-full text-indigo-600">

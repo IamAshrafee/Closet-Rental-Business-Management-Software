@@ -5,7 +5,8 @@ import StockItemCard from "../cards/StockItemCard";
 import ItemInformationPopup from "../modals/ItemInformationPopup";
 import BookingInformationPopup from "../modals/BookingInformationPopup";
 import { useSelector } from "react-redux";
-import { getDatabase, ref, onValue, remove } from "firebase/database";
+import { ref, onValue, remove } from "firebase/database";
+import { db } from "../authentication/firebaseConfig";
 import { motion, AnimatePresence } from "framer-motion";
 import EmptyState from "../components/EmptyState";
 import {
@@ -114,11 +115,11 @@ const Stock = () => {
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [colorFilter, setColorFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [viewFilter, setViewFilter] = useState("published"); // published, drafts
   const [sortOption, setSortOption] = useState("name-asc");
   const [refreshKey, setRefreshKey] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const colorsList = useSelector((state) => state.color.value);
   const categoriesList = useSelector((state) => state.category.value);
@@ -165,7 +166,7 @@ const Stock = () => {
         unsubscribeItems();
       };
     }
-  }, [db, userInfo, refreshKey]);
+  }, [userInfo, refreshKey]);
 
   // Process items with booking data
   const itemsWithBookingData = useMemo(() => {
@@ -215,6 +216,13 @@ const Stock = () => {
   const filteredItems = useMemo(() => {
     return itemsWithBookingData
       .filter((item) => {
+        // View filter (published vs. drafts)
+        if (viewFilter === "published") {
+          if (item.status === 'draft') return false;
+        } else if (viewFilter === "drafts") {
+          if (item.status !== 'draft') return false;
+        }
+
         const matchesSearch = item.name
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
@@ -257,6 +265,7 @@ const Stock = () => {
     colorFilter,
     categoryFilter,
     sortOption,
+    viewFilter,
   ]);
 
   // Handlers
@@ -365,6 +374,11 @@ const Stock = () => {
     { value: "popularity", label: "Most Popular" },
   ];
 
+  const viewOptions = [
+    { value: "published", label: "Published" },
+    { value: "drafts", label: "Drafts" },
+  ];
+
   return (
     <Sidebar>
       <div className="flex flex-col">
@@ -437,6 +451,15 @@ const Stock = () => {
                 className="sm:hidden bg-gray-50 p-3 rounded-lg mb-3 space-y-3"
               >
                 <CustomSelect
+                  options={viewOptions}
+                  value={viewFilter}
+                  onChange={setViewFilter}
+                  isOpen={openDropdown === "view"}
+                  onToggle={() =>
+                    setOpenDropdown(openDropdown === "view" ? null : "view")
+                  }
+                />
+                <CustomSelect
                   options={availabilityOptions}
                   value={availabilityFilter}
                   onChange={setAvailabilityFilter}
@@ -483,6 +506,16 @@ const Stock = () => {
 
           {/* Desktop Filters */}
           <div className="hidden w-full sm:flex gap-3">
+            <CustomSelect
+              options={viewOptions}
+              value={viewFilter}
+              onChange={setViewFilter}
+              isOpen={openDropdown === "view"}
+              className="flex-1"
+              onToggle={() =>
+                setOpenDropdown(openDropdown === "view" ? null : "view")
+              }
+            />
             <CustomSelect
               options={availabilityOptions}
               value={availabilityFilter}

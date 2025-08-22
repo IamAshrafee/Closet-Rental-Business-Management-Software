@@ -108,7 +108,7 @@ const UpcomingDeliveriesCard = ({ bookings, onDeliveryClick, stockItems }) => {
                         {stockItems && booking.items.map((item, index) => {
                           const itemDetails = stockItems.find(si => si.id === item.itemId);
                           return (
-                            <div key={index} className="flex items-center">
+                            <div key={item.itemId} className="flex items-center">
                               <img 
                                 src={itemDetails?.photo || '/assets/default-item-image.svg'} 
                                 alt={itemDetails?.name || 'Item'}

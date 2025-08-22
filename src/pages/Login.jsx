@@ -10,22 +10,8 @@ import { userLogInfo } from '../slice/userSlice';
 import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
 
 // Firebase imports
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-
-// Firebase config (same as registration)
-const firebaseConfig = {
-  apiKey: "AIzaSyDgFLWJLTz3tF40NjNBl8s9eLd6OLk3WiM",
-  authDomain: "closet-rental-business.firebaseapp.com",
-  projectId: "closet-rental-business",
-  storageBucket: "closet-rental-business.firebasestorage.app",
-  messagingSenderId: "145160803642",
-  appId: "1:145160803642:web:d0beae89249c73e44c6c03"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../authentication/firebaseConfig';
 
 const Login = () => {
   // Redux

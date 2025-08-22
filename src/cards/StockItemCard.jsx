@@ -52,7 +52,7 @@ const StockItemCard = ({
     rentTo,
     description,
     target,
-    rented = 0,
+    rented,
     photo,
     activeBookingsCount = 0,
     activeBookings = [],
@@ -126,6 +126,11 @@ const StockItemCard = ({
         role="button"
         tabIndex={0}
       >
+        {item.status === 'draft' && (
+          <div className="absolute top-2 left-2 z-10 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full flex items-center shadow-sm font-semibold">
+            Draft
+          </div>
+        )}
         {isFeatured && (
           <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs px-2 py-1 rounded-full flex items-center shadow-sm">
             <FiStar className="mr-1" size={10} />

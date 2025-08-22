@@ -18,6 +18,7 @@ const EmptyState = ({ title, description, buttonText, onButtonClick }) => {
       <p className="text-gray-500 max-w-xs mx-auto mb-6">{description}</p>
       {buttonText && onButtonClick && (
         <motion.button
+          key="button"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onButtonClick}

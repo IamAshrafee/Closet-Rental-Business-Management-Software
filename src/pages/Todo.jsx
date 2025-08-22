@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Sidebar from '../layout/Sidebar';
 import { useSelector } from 'react-redux';
-import { getDatabase, ref, onValue, push, update, remove } from 'firebase/database';
+import { ref, onValue, push, update, remove } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 import { FiPlus, FiTrash2, FiCheckCircle, FiCircle, FiCalendar, FiUser } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import EmptyState from '../components/EmptyState';
@@ -15,7 +16,6 @@ const Todo = () => {
   const [activeTab, setActiveTab] = useState('Tahmina');
   const [isLoading, setIsLoading] = useState(true);
 
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const { formatDate, formatTime } = useFormatDate();
 
@@ -34,7 +34,7 @@ const Todo = () => {
       });
       return () => unsubscribe();
     }
-  }, [db, userInfo]);
+  }, [userInfo]);
 
   const formatDateTime = (dateString) => {
     if (!dateString) return 'N/A';

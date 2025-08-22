@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { FiUser, FiPhone, FiMail, FiMapPin, FiEdit2 } from 'react-icons/fi';
-import { getDatabase, ref, push, set, update } from 'firebase/database';
+import { ref, push, set, update } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAutoscrollOnFocus from '../hooks/useAutoscrollOnFocus';
@@ -18,7 +19,6 @@ const AddPartnerPopup = ({ isOpen, onClose, partner }) => {
   const formRef = useRef(null);
   useAutoscrollOnFocus(formRef);
 
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {

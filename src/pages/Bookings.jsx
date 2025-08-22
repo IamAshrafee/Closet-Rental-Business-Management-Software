@@ -4,8 +4,9 @@ import AddNewBookingForm from "../modals/AddNewBookingForm";
 import BookingsCard from "../cards/BookingsCard";
 import BookingInformationPopup from "../modals/BookingInformationPopup";
 import { useSelector } from "react-redux";
-import { getDatabase, ref, onValue, remove, update, get } from "firebase/database";
-import { FiPlus, FiSearch, FiCalendar, FiX } from "react-icons/fi";
+import { ref, onValue, remove, update, get } from "firebase/database";
+import { db } from "../authentication/firebaseConfig";
+import { FiPlus, FiSearch, FiCalendar, FiX, FiArrowLeft } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -22,8 +23,8 @@ const Bookings = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("All");
   const [searchCategory, setSearchCategory] = useState("All");
+  const [view, setView] = useState("active"); // active, drafts
   
-  const db = getDatabase();
   const userInfo = useSelector((state) => state.userLogInfo.value);
 
   useEffect(() => {
@@ -47,9 +48,9 @@ const Bookings = () => {
         unsubscribeBookings();
         unsubscribeCustomers();
     };
-  }, [db, userInfo]);
+  }, [userInfo]);
 
-  const filteredBookings = useMemo(() => {
+  const { draftsCount, filteredBookings } = useMemo(() => {
     const statusOrder = {
       'Waiting for Delivery': 1,
       'Waiting for Return': 2,
@@ -57,51 +58,65 @@ const Bookings = () => {
       'Completed': 4,
     };
 
-    return bookings
-      .filter(booking => {
+    const draftBookings = bookings.filter(b => b.status === 'Draft');
+
+    let displayBookings;
+
+    if (view === 'drafts') {
+      displayBookings = draftBookings;
+    } else {
+      displayBookings = bookings.filter(booking => {
+        if (booking.status === 'Draft') return false;
         if (statusFilter !== "All" && booking.status !== statusFilter) {
           return false;
         }
-        
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          const customer = customers.find((c) => c.id === booking.customerId);
-
-          switch (searchCategory) {
-            case "Name":
-              return customer?.name.toLowerCase().includes(query) || false;
-            case "Phone":
-              return customer?.phone.includes(query) || false;
-            case "Booking ID":
-              return booking.id.toLowerCase().includes(query);
-            case "All":
-            default:
-              const customerName = customer?.name.toLowerCase() || "";
-              const customerPhone = customer?.phone || "";
-              const bookingId = booking.id.toLowerCase();
-              return (
-                customerName.includes(query) ||
-                bookingId.includes(query) ||
-                customerPhone.includes(query)
-              );
-          }
-        }
-        
         return true;
-      })
-      .sort((a, b) => {
-        const statusA = statusOrder[a.status] || 99;
-        const statusB = statusOrder[b.status] || 99;
-
-        if (statusA !== statusB) {
-          return statusA - statusB;
-        }
-
-        const dateA = a.createdAt ? new Date(a.createdAt) : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt) : 0;
-        return dateB - dateA;
       });
-  }, [bookings, searchQuery, statusFilter, customers]);
+    }
+
+    const finalFiltered = displayBookings.filter(booking => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const customer = customers.find((c) => c.id === booking.customerId);
+
+        switch (searchCategory) {
+          case "Name":
+            return customer?.name.toLowerCase().includes(query) || false;
+          case "Phone":
+            return customer?.phone.includes(query) || false;
+          case "Booking ID":
+            return booking.id.toLowerCase().includes(query);
+          case "All":
+          default:
+            const customerName = customer?.name.toLowerCase() || "";
+            const customerPhone = customer?.phone || "";
+            const bookingId = booking.id.toLowerCase();
+            return (
+              customerName.includes(query) ||
+              bookingId.includes(query) ||
+              customerPhone.includes(query)
+            );
+        }
+      }
+      return true;
+    });
+
+    const sorted = finalFiltered.sort((a, b) => {
+      const statusA = statusOrder[a.status] || 99;
+      const statusB = statusOrder[b.status] || 99;
+
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+
+      const dateA = a.createdAt ? new Date(a.createdAt) : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt) : 0;
+      return dateB - dateA;
+    });
+
+    return { draftsCount: draftBookings.length, filteredBookings: sorted };
+
+  }, [bookings, searchQuery, statusFilter, customers, view]);
 
   const handleOpenAddModal = () => {
     setEditingBooking(null);
@@ -207,6 +222,21 @@ const Bookings = () => {
               </select>
             </div>
             <div className="w-full md:w-auto flex items-center gap-2">
+              {view === 'drafts' ? (
+                <button
+                  onClick={() => setView('active')}
+                  className={`w-full md:w-auto flex items-center justify-center px-4 py-2 rounded-lg font-medium whitespace-nowrap bg-white border border-gray-300`}>
+                  <FiArrowLeft className="mr-2" />
+                  Back
+                </button>
+              ) : (
+                <button
+                  onClick={() => setView('drafts')}
+                  className={`w-full md:w-auto flex items-center justify-center px-4 py-2 rounded-lg font-medium whitespace-nowrap ${view === 'drafts' ? 'bg-yellow-500 text-white' : 'bg-white border border-gray-300'}`}>
+                  Drafts
+                  {draftsCount > 0 && <span className="ml-2 bg-yellow-200 text-yellow-800 text-xs font-semibold px-2 rounded-full">{draftsCount}</span>}
+                </button>
+              )}
               <label htmlFor="statusFilter" className="sr-only">Filter by status</label>
               <select
                 id="statusFilter"
@@ -232,13 +262,13 @@ const Bookings = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 px-0 md:px-0 pb-6">
             {[...Array(8)].map((_, index) => (
               <Skeleton key={index} height={230} className="rounded-xl" />
             ))}
           </div>
         ) : filteredBookings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 px-4 md:px-0 pb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 px-0 md:px-0 pb-6">
             <AnimatePresence>
               {filteredBookings.map((booking) => (
                 <motion.div

@@ -14,14 +14,15 @@ import {
   FiClock,
   FiCheckCircle
 } from 'react-icons/fi';
-import { getDatabase, ref, onValue } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
+import { db } from '../authentication/firebaseConfig';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { useFormatDate } from '../hooks/useFormatDate';
 
 const InfoLine = ({ icon, label, value, className = '', iconClass = '' }) => (
   <div className={`flex items-center text-sm ${className}`}>
-    <div className={`flex-shrink-0 w-5 ${iconClass || 'text-gray-400'}`}>
+    <div className={`flex-shrink-0  ${iconClass || 'text-gray-400'}`}>
       {icon}
     </div>
     <span className="ml-2 font-medium text-gray-500">{label}:</span>
@@ -31,8 +32,7 @@ const InfoLine = ({ icon, label, value, className = '', iconClass = '' }) => (
 
 const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => {
   const [customer, setCustomer] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const db = getDatabase();
+  const [isExpanded, setIsExpanded] = useState(booking.status === 'Draft');
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const currency = useSelector((state) => state.currency.value);
   const { formatDate, formatTime } = useFormatDate();
@@ -45,7 +45,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
       });
       return () => unsubscribe();
     }
-  }, [db, userInfo, booking.customerId]);
+  }, [userInfo, booking.customerId]);
 
   const {
     deliveryDate,
@@ -82,6 +82,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
 
   const getStatusColor = (currentStatus) => {
     switch (currentStatus) {
+      case 'Draft': return 'bg-gray-200 text-gray-800';
       case 'Waiting for Delivery': return 'bg-blue-100 text-blue-800';
       case 'Waiting for Return': return 'bg-yellow-100 text-yellow-800';
       case 'Completed': return 'bg-green-100 text-green-800';
@@ -102,7 +103,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
     }
   };
 
-  const statusOptions = ['Waiting for Delivery', 'Waiting for Return', 'Completed', 'Postponed'];
+  const statusOptions = ['Draft', 'Waiting for Delivery', 'Waiting for Return', 'Completed', 'Postponed'];
 
   if (!customer) return null;
 
@@ -176,7 +177,7 @@ const BookingsCard = ({ booking, onView, onEdit, onDelete, onStatusChange }) => 
         >
           <div className="border-t border-gray-200 pt-4 mb-4">
             {/* Detailed Dates */}
-            <div className="grid grid-cols-2 gap-6 mb-4">
+            <div className="grid grid-cols-2 gap-0 mb-4">
               <div>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">Rent Period</h4>
                 <div className="space-y-1">

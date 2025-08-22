@@ -2,12 +2,12 @@ import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Navigate, Outlet } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
-import { db } from './firebaseConfig';
-import { setCategories } from '../slice/categorySlice';
-import { setColors } from '../slice/colorSlice';
-import { setCurrency } from '../slice/currencySlice';
-import { setCompanyName } from '../slice/companySlice';
-import { setDateTimeFormat } from '../slice/dateTimeSlice';
+import { db } from '../lib/firebase';
+import { setCategories } from '../store/slices/categorySlice';
+import { setColors } from '../store/slices/colorSlice';
+import { setCurrency } from '../store/slices/currencySlice';
+import { setCompanyName } from '../store/slices/companySlice';
+import { setDateTimeFormat } from '../store/slices/dateTimeSlice';
 
 const PrivateRoute = () => {
   const userInfo = useSelector((state) => state.userLogInfo.value);

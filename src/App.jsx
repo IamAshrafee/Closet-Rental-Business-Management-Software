@@ -1,28 +1,28 @@
 import React from "react";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
-import Home from "./pages/Home";
-import Stock from "./pages/Stock";
-import Customers from "./pages/Customers";
-import Bookings from "./pages/Bookings";
-import Reminders from "./pages/Reminders";
-import Login from "./pages/Login";
-import Registration from "./pages/Registration";
-import { store } from "./store";
+import Home from "./features/home/HomePage";
+import Stock from "./features/stock/StockPage";
+import Customers from "./features/customers/CustomersPage";
+import Bookings from "./features/bookings/BookingsPage";
+import Reminders from "./features/reminders/RemindersPage";
+import Login from "./features/auth/LoginPage";
+import Registration from "./features/auth/RegistrationPage";
+import { store } from "./store/index.js";
 import { Provider } from "react-redux";
-import VerifyEmail from "./pages/VerifyEmail";
-import PrivateRoute from "./authentication/PrivateRoute";
-import Settings from "./pages/Settings";
-import Partners from "./pages/Partners";
-import PartnerPayouts from "./pages/PartnerPayouts";
-import Todo from "./pages/Todo";
+import VerifyEmail from "./features/auth/VerifyEmailPage";
+import Settings from "./features/settings/SettingsPage";
+import Partners from "./features/partners/PartnersPage";
+import PartnerPayouts from "./features/partners/PartnerPayoutsPage";
+import Todo from "./features/todo/TodoPage";
+import AppLayout from "./layout/AppLayout";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/login" replace />,
+    element: <Navigate to="/dashboard" replace />,
   },
   {
-    element: <PrivateRoute />,
+    element: <AppLayout />,
     children: [
       {
         path: "/dashboard",

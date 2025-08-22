@@ -1,5 +1,5 @@
 import { ref, update } from 'firebase/database';
-import { db } from '../authentication/firebaseConfig';
+import { db } from '../lib/firebase';
 import { useSelector } from 'react-redux';
 
 export const useUpdateCustomerStats = () => {

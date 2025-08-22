@@ -5,7 +5,7 @@ import React, { useState, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FiMenu, FiX, FiDollarSign, FiCheckSquare } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
-import { userLogInfo } from "../slice/userSlice";
+import { userLogInfo } from "../store/slices/userSlice";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SidebarContent = ({ onLinkClick, isMobile = false }) => {

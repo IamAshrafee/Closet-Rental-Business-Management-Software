@@ -11,10 +11,11 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import EmptyState from '../../components/EmptyState';
+import CardSkeleton from './CardSkeleton';
 
 import { useFormatDate } from '../../hooks/useFormatDate';
 
-const UpcomingDeliveriesCard = ({ bookings, onDeliveryClick, stockItems }) => {
+const UpcomingDeliveriesCard = ({ bookings, onDeliveryClick, stockItems, isLoading }) => {
   const currency = useSelector((state) => state.currency.value);
   const { formatDate } = useFormatDate();
   return (
@@ -33,7 +34,9 @@ const UpcomingDeliveriesCard = ({ bookings, onDeliveryClick, stockItems }) => {
 
       <div className="flex-grow overflow-y-auto p-5">
         <AnimatePresence>
-          {bookings.length > 0 ? (
+          {isLoading ? (
+            <CardSkeleton />
+          ) : bookings.length > 0 ? (
             <motion.ul 
               className="space-y-3"
               initial="hidden"

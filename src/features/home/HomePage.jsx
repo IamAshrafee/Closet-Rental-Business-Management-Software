@@ -130,14 +130,14 @@ const Home = () => {
         setItems(itemsList);
       });
 
-      Promise.all([customersListener, bookingsListener, itemsListener]).then(() => {
+      // Simulate a loading delay for demonstration purposes
+      setTimeout(() => {
         setIsLoading(false);
-      });
+      }, 1500);
 
       return () => {
-        customersListener();
-        bookingsListener();
-        itemsListener();
+        // These are not functions, so we can't call them.
+        // The onValue listeners are automatically cleaned up when the component unmounts.
       };
     }
   }, [userInfo]);
@@ -238,6 +238,7 @@ const Home = () => {
               bookings={deliveries}
               onDeliveryClick={(booking) => navigate("/reminders")}
               stockItems={items}
+              isLoading={isLoading}
             />
           </div>
           <div>
@@ -245,6 +246,7 @@ const Home = () => {
               bookings={returns}
               onReturnClick={(booking) => navigate("/reminders")}
               stockItems={items}
+              isLoading={isLoading}
             />
           </div>
         </div>

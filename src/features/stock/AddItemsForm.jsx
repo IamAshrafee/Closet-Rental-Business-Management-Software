@@ -318,9 +318,23 @@ const AddItemsForm = ({ isOpen, onClose, item, stockItems }) => {
 
   const validateForm = (isDraft = false) => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
 
-    if (!isDraft) {
+    if (isDraft) {
+      // For drafts, check if at least one field has a value.
+      const hasAnyValue = Object.values(formData).some(value => {
+        if (typeof value === 'string') return value.trim() !== '';
+        if (typeof value === 'number') return value !== '';
+        if (Array.isArray(value)) return value.length > 0;
+        return value !== false && value !== null && value !== undefined;
+      });
+
+      if (!hasAnyValue) {
+        // You can set a generic error or a specific one
+        newErrors.name = 'At least one field is required to save a draft.';
+      }
+    } else {
+      // Stricter validation for publishing
+      if (!formData.name.trim()) newErrors.name = 'Name is required';
       if (!formData.category) newErrors.category = 'Category is required';
       if (formData.isCollaborated && !formData.ownerId) newErrors.ownerId = 'Please select a partner';
       if (!formData.purchasePrice) newErrors.purchasePrice = 'Purchase price is required';

@@ -14,7 +14,7 @@ import EmptyState from '../../components/EmptyState';
 
 import { useFormatDate } from '../../hooks/useFormatDate';
 
-const UpcomingReturnsCard = ({ bookings, onReturnClick, stockItems }) => {
+const UpcomingReturnsCard = ({ bookings = [], onReturnClick, stockItems = [] }) => {
   const currency = useSelector((state) => state.currency.value);
   const { formatDate } = useFormatDate();
   return (
@@ -105,7 +105,7 @@ const UpcomingReturnsCard = ({ bookings, onReturnClick, stockItems }) => {
                     <div className="border-t border-gray-100 mt-3 pt-3">
                       <h5 className="text-xs font-bold text-gray-500 mb-2">Items</h5>
                       <div className="space-y-2">
-                        {stockItems && booking.items.map((item, index) => {
+                        {stockItems && booking.items?.map((item, index) => {
                           const itemDetails = stockItems.find(si => si.id === item.itemId);
                           return (
                             <div key={item.itemId} className="flex items-center">

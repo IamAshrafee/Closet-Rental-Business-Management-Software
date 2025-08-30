@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Sidebar from "../../layout/Sidebar";
 import AddItemsForm from "./AddItemsForm";
 import StockItemCard from "./StockItemCard";
@@ -70,7 +70,7 @@ const CustomSelect = ({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+            className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto"
           >
             {options.map((option) => (
               <button
@@ -123,6 +123,21 @@ const Stock = () => {
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const colorsList = useSelector((state) => state.color.value);
   const categoriesList = useSelector((state) => state.category.value);
+  const filtersContainerRef = useRef(null);
+
+  // Effect to handle clicks outside of dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filtersContainerRef.current && !filtersContainerRef.current.contains(event.target)) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Fetch data from Firebase
   useEffect(() => {
@@ -349,14 +364,15 @@ const Stock = () => {
     { value: "unavailable", label: "Unavailable" },
   ];
 
-  const colorOptions = [
+  const colorOptions = useMemo(() => [
     { value: "all", label: "All Colors" },
-    ...(colorsList?.map((color) => ({
-      value: color.name,
-      label: color.name,
-      hex: color.hex,
-    })) || []),
-  ];
+    ...([...colorsList].sort((a, b) => a.name.localeCompare(b.name))
+      .map((color) => ({
+        value: color.name,
+        label: color.name,
+        hex: color.hex,
+      })) || []),
+  ], [colorsList]);
 
   const categoryOptions = [
     { value: "all", label: "All Categories" },
@@ -419,7 +435,7 @@ const Stock = () => {
         </div>
 
         {/* Search and Filter Section */}
-        <div className="mb-4 sm:mb-6">
+        <div ref={filtersContainerRef} className="mb-4 sm:mb-6">
           <div className="relative mb-3">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FiSearch className="text-gray-400" size={18} />

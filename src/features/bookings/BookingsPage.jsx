@@ -1,54 +1,83 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Sidebar from "../../layout/Sidebar";
 import AddNewBookingForm from "./AddNewBookingForm";
 import BookingsCard from "./BookingsCard";
 import BookingInformationPopup from "./BookingInformationPopup";
 import { useSelector } from "react-redux";
-import { ref, onValue, remove, update, get } from "firebase/database";
+import { ref, remove, update } from "firebase/database";
 import { db } from "../../lib/firebase";
-import { FiPlus, FiSearch, FiCalendar, FiX, FiArrowLeft } from "react-icons/fi";
+import { FiPlus, FiSearch, FiFilter, FiX, FiChevronDown, FiArrowLeft } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import EmptyState from "../../components/EmptyState";
+import { useUpdateCustomerStats } from "../../hooks/useUpdateCustomerStats";
+
+const CustomSelect = ({ options, value, onChange, className = "", isOpen, onToggle }) => {
+  const selectedOption = options.find((opt) => opt.value === value) || options[0];
+  return (
+    <div className={`relative ${className}`}>
+      <button
+        type="button"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        onClick={onToggle}
+      >
+        <span>{selectedOption.label}</span>
+        <FiChevronDown size={16} className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto"
+          >
+            {options.map((option) => (
+              <button
+                key={option.value}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${value === option.value ? "bg-indigo-50 text-indigo-700" : "text-gray-700"}`}
+                onClick={() => { onChange(option.value); onToggle(); }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 const Bookings = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
-  const [bookings, setBookings] = useState([]);
-  const [customers, setCustomers] = useState([]);
   const [editingBooking, setEditingBooking] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("All");
-  const [searchCategory, setSearchCategory] = useState("All");
   const [view, setView] = useState("active"); // active, drafts
-  
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const filtersContainerRef = useRef(null);
+
   const userInfo = useSelector((state) => state.userLogInfo.value);
+  const { bookings, status: bookingsStatus } = useSelector((state) => state.bookings);
+  const { customers, status: customersStatus } = useSelector((state) => state.customers);
+  const { updateStats } = useUpdateCustomerStats();
+
+  const isLoading = useMemo(() => 
+    bookingsStatus === 'loading' || customersStatus === 'loading' || bookingsStatus === 'idle' || customersStatus === 'idle',
+    [bookingsStatus, customersStatus]
+  );
 
   useEffect(() => {
-    if (!userInfo) return;
-
-    setIsLoading(true);
-    const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
-    const unsubscribeBookings = onValue(bookingsRef, (snapshot) => {
-      const data = snapshot.val();
-      setBookings(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
-      setIsLoading(false);
-    });
-
-    const customersRef = ref(db, `users/${userInfo.uid}/customers`);
-    const unsubscribeCustomers = onValue(customersRef, (snapshot) => {
-        const data = snapshot.val();
-        setCustomers(data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : []);
-    });
-
-    return () => {
-        unsubscribeBookings();
-        unsubscribeCustomers();
+    const handleClickOutside = (event) => {
+      if (filtersContainerRef.current && !filtersContainerRef.current.contains(event.target)) {
+        setOpenDropdown(null);
+      }
     };
-  }, [userInfo]);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const { draftsCount, filteredBookings } = useMemo(() => {
     const statusOrder = {
@@ -58,64 +87,38 @@ const Bookings = () => {
       'Completed': 4,
     };
 
-    const draftBookings = bookings.filter(b => b.status === 'Draft');
+    const customerMap = new Map(customers.map(c => [c.id, c]));
+    const enrichedBookings = bookings.map(b => ({
+      ...b,
+      customer: customerMap.get(b.customerId)
+    }));
 
-    let displayBookings;
+    const draftBookings = enrichedBookings.filter(b => b.status === 'Draft');
+    let displayBookings = view === 'drafts' 
+      ? draftBookings 
+      : enrichedBookings.filter(b => b.status !== 'Draft');
 
-    if (view === 'drafts') {
-      displayBookings = draftBookings;
-    } else {
-      displayBookings = bookings.filter(booking => {
-        if (booking.status === 'Draft') return false;
-        if (statusFilter !== "All" && booking.status !== statusFilter) {
-          return false;
-        }
-        return true;
-      });
+    if (statusFilter !== "All") {
+      displayBookings = displayBookings.filter(b => b.status === statusFilter);
     }
 
     const finalFiltered = displayBookings.filter(booking => {
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const customer = customers.find((c) => c.id === booking.customerId);
-
-        switch (searchCategory) {
-          case "Name":
-            return customer?.name.toLowerCase().includes(query) || false;
-          case "Phone":
-            return customer?.phone.includes(query) || false;
-          case "Booking ID":
-            return booking.id.toLowerCase().includes(query);
-          case "All":
-          default:
-            const customerName = customer?.name.toLowerCase() || "";
-            const customerPhone = customer?.phone || "";
-            const bookingId = booking.id.toLowerCase();
-            return (
-              customerName.includes(query) ||
-              bookingId.includes(query) ||
-              customerPhone.includes(query)
-            );
-        }
-      }
-      return true;
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      const customerName = booking.customer?.name.toLowerCase() || "";
+      const customerPhone = booking.customer?.phone || "";
+      const bookingId = booking.id.toLowerCase();
+      return customerName.includes(query) || bookingId.includes(query) || customerPhone.includes(query);
     });
 
     const sorted = finalFiltered.sort((a, b) => {
       const statusA = statusOrder[a.status] || 99;
       const statusB = statusOrder[b.status] || 99;
-
-      if (statusA !== statusB) {
-        return statusA - statusB;
-      }
-
-      const dateA = a.createdAt ? new Date(a.createdAt) : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt) : 0;
-      return dateB - dateA;
+      if (statusA !== statusB) return statusA - statusB;
+      return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
     return { draftsCount: draftBookings.length, filteredBookings: sorted };
-
   }, [bookings, searchQuery, statusFilter, customers, view]);
 
   const handleOpenAddModal = () => {
@@ -138,7 +141,7 @@ const Bookings = () => {
       try {
         const bookingRef = ref(db, `users/${userInfo.uid}/bookings/${booking.id}`);
         await remove(bookingRef);
-        await updateCustomerStats(booking.customerId);
+        await updateStats(booking.customerId);
       } catch (error) {
         console.error("Error deleting booking:", error);
       }
@@ -150,125 +153,76 @@ const Bookings = () => {
       try {
         const bookingRef = ref(db, `users/${userInfo.uid}/bookings/${booking.id}`);
         await update(bookingRef, { status: newStatus });
-        await updateCustomerStats(booking.customerId);
+        await updateStats(booking.customerId);
       } catch (error) {
         console.error("Error updating booking status:", error);
       }
     }
   };
 
-  const updateCustomerStats = async (customerId) => {
-    const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
-    const snapshot = await get(bookingsRef);
-    const allBookings = snapshot.val() || {};
-
-    const customerBookings = Object.values(allBookings).filter(b => b.customerId === customerId);
-
-    const totalSpent = customerBookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0);
-    const totalBookings = customerBookings.length;
-    const totalOutstanding = customerBookings.reduce((acc, b) => acc + (b.dueAmount > 0 ? b.dueAmount : 0), 0);
-    const activeBookings = customerBookings.filter(b => b.status !== 'Completed' && b.status !== 'Postponed').length;
-
-    const customerRef = ref(db, `users/${userInfo.uid}/customers/${customerId}`);
-    await update(customerRef, {
-      totalSpent,
-      totalBookings,
-      totalOutstanding,
-      activeBookings
-    });
-  };
-
-  const toggleSearch = () => {
-    setIsSearching(!isSearching);
-    if (isSearching) setSearchQuery("");
-  };
+  const statusOptions = [
+    { value: "All", label: "All Statuses" },
+    { value: "Waiting for Delivery", label: "Waiting for Delivery" },
+    { value: "Waiting for Return", label: "Waiting for Return" },
+    { value: "Postponed", label: "Postponed" },
+    { value: "Completed", label: "Completed" },
+  ];
 
   return (
     <Sidebar>
       <div className="flex flex-col h-full">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Bookings</h1>
-            <p className="text-gray-500 mt-1 text-sm md:text-base">
+            <h1 className="text-2xl font-bold text-gray-800">Bookings</h1>
+            <p className="text-gray-500 mt-1 text-sm">
               {filteredBookings.length} {filteredBookings.length === 1 ? 'booking' : 'bookings'} found
             </p>
           </div>
-          
-          <div className="w-full md:w-auto flex flex-col md:flex-row items-start md:items-center gap-2">
-            <div className="w-full md:w-auto flex items-center gap-2">
-              <div className="relative flex-grow">
-                <label htmlFor="searchQuery" className="sr-only">Search bookings</label>
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  id="searchQuery"
-                  placeholder="Search..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <label htmlFor="searchCategory" className="sr-only">Search category</label>
-              <select
-                id="searchCategory"
-                value={searchCategory}
-                onChange={(e) => setSearchCategory(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="All">All</option>
-                <option value="Name">Name</option>
-                <option value="Phone">Phone</option>
-                <option value="Booking ID">Booking ID</option>
-              </select>
-            </div>
-            <div className="w-full md:w-auto flex items-center gap-2">
-              {view === 'drafts' ? (
-                <button
-                  onClick={() => setView('active')}
-                  className={`w-full md:w-auto flex items-center justify-center px-4 py-2 rounded-lg font-medium whitespace-nowrap bg-white border border-gray-300`}>
-                  <FiArrowLeft className="mr-2" />
-                  Back
-                </button>
-              ) : (
-                <button
-                  onClick={() => setView('drafts')}
-                  className={`w-full md:w-auto flex items-center justify-center px-4 py-2 rounded-lg font-medium whitespace-nowrap ${view === 'drafts' ? 'bg-yellow-500 text-white' : 'bg-white border border-gray-300'}`}>
-                  Drafts
-                  {draftsCount > 0 && <span className="ml-2 bg-yellow-200 text-yellow-800 text-xs font-semibold px-2 rounded-full">{draftsCount}</span>}
-                </button>
-              )}
-              <label htmlFor="statusFilter" className="sr-only">Filter by status</label>
-              <select
-                id="statusFilter"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="All">All Statuses</option>
-                <option value="Waiting for Delivery">Waiting for Delivery</option>
-                <option value="Waiting for Return">Waiting for Return</option>
-                <option value="Postponed">Postponed</option>
-                <option value="Completed">Completed</option>
-              </select>
-              <button
-                onClick={handleOpenAddModal}
-                className="w-full md:w-auto flex items-center justify-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium whitespace-nowrap"
-              >
-                <FiPlus className="mr-2" size={18} />
-                <span>Add Booking</span>
-              </button>
-            </div>
+          <button
+            onClick={handleOpenAddModal}
+            className="w-full sm:w-auto flex items-center justify-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium whitespace-nowrap"
+          >
+            <FiPlus className="mr-2" size={18} />
+            <span>Add Booking</span>
+          </button>
+        </div>
+
+        <div ref={filtersContainerRef} className="mb-6 space-y-3">
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by customer name, phone, or booking ID..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && <FiX onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-gray-600" />}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <CustomSelect
+              options={[{ value: 'active', label: 'Active Bookings' }, { value: 'drafts', label: `Drafts (${draftsCount})` }]}
+              value={view}
+              onChange={setView}
+              isOpen={openDropdown === 'view'}
+              onToggle={() => setOpenDropdown(openDropdown === 'view' ? null : 'view')}
+            />
+            <CustomSelect
+              options={statusOptions}
+              value={statusFilter}
+              onChange={setStatusFilter}
+              isOpen={openDropdown === 'status'}
+              onToggle={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
+            />
           </div>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 px-0 md:px-0 pb-6">
-            {[...Array(8)].map((_, index) => (
-              <Skeleton key={index} height={230} className="rounded-xl" />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, index) => <Skeleton key={index} height={230} className="rounded-xl" />)}
           </div>
         ) : filteredBookings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 px-0 md:px-0 pb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
             <AnimatePresence>
               {filteredBookings.map((booking) => (
                 <motion.div
@@ -281,6 +235,7 @@ const Bookings = () => {
                 >
                   <BookingsCard 
                     booking={booking}
+                    customer={booking.customer}
                     onView={() => handleOpenInfoModal(booking)}
                     onEdit={() => handleEditBooking(booking)}
                     onDelete={() => handleDeleteBooking(booking)}
@@ -293,13 +248,7 @@ const Bookings = () => {
         ) : (
           <EmptyState 
             title={searchQuery || statusFilter !== "All" ? 'No bookings found' : 'No bookings yet'}
-            description={
-              searchQuery 
-                ? 'Try a different search term' 
-                : statusFilter !== "All"
-                  ? `No bookings with status "${statusFilter}"`
-                  : 'Get started by adding your first booking'
-            }
+            description={searchQuery ? 'Try a different search term' : 'Get started by adding your first booking'}
             buttonText="Add Booking"
             onButtonClick={handleOpenAddModal}
           />

@@ -132,12 +132,16 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   const userInfo = useSelector((state) => state.userLogInfo.value);
   const colors = useSelector((state) => state.color.value);
   const categories = useSelector((state) => state.category.value);
-  const updateCustomerStats = useUpdateCustomerStats();
+  const { updateStats } = useUpdateCustomerStats();
 
   useEffect(() => {
     if (isOpen) {
       if (booking) {
-        setBookingDetails(booking);
+        setBookingDetails({
+          ...booking,
+          items: booking.items || [],
+          advances: booking.advances || [],
+        });
       } else {
         handleReset();
       }
@@ -269,7 +273,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   const handleAddItem = () => {
     setBookingDetails(prev => ({
       ...prev,
-      items: [...prev.items, { 
+      items: [...(prev.items || []), { 
         itemId: '', 
         priceType: 'Fixed', 
         price: '',
@@ -280,7 +284,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
 
   // Handle item changes from react-select
   const handleItemSelectChange = (index, selectedOption) => {
-    const newItems = [...bookingDetails.items];
+    const newItems = [...(bookingDetails.items || [])];
     const selectedItem = stockItems.find(i => i.id === selectedOption.value);
 
     newItems[index] = {
@@ -304,7 +308,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
 
   const handleItemDetailsChange = (index, e) => {
     const { name, value } = e.target;
-    const newItems = [...bookingDetails.items];
+    const newItems = [...(bookingDetails.items || [])];
     newItems[index] = { ...newItems[index], [name]: value };
     
     // Recalculate price when relevant fields change
@@ -322,7 +326,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
 
   // Remove item
   const handleRemoveItem = (index) => {
-    const newItems = bookingDetails.items.filter((_, i) => i !== index);
+    const newItems = (bookingDetails.items || []).filter((_, i) => i !== index);
     setBookingDetails(prev => ({ ...prev, items: newItems }));
   };
 
@@ -330,14 +334,14 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   const handleAddAdvance = () => {
     setBookingDetails(prev => ({
       ...prev,
-      advances: [...prev.advances, { amount: '', date: new Date().toISOString().split('T')[0] }]
+      advances: [...(prev.advances || []), { amount: '', date: new Date().toISOString().split('T')[0] }]
     }));
   };
 
   // Handle advance changes
   const handleAdvanceChange = (index, e) => {
     const { name, value } = e.target;
-    const newAdvances = [...bookingDetails.advances];
+    const newAdvances = [...(bookingDetails.advances || [])];
     newAdvances[index][name] = value;
     setBookingDetails(prev => ({ ...prev, advances: newAdvances }));
     
@@ -349,7 +353,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
 
   const handleAdvanceDateChange = (index, date) => {
     const dateString = date ? date.toISOString().split('T')[0] : '';
-    const newAdvances = [...bookingDetails.advances];
+    const newAdvances = [...(bookingDetails.advances || [])];
     newAdvances[index].date = dateString;
     setBookingDetails(prev => ({ ...prev, advances: newAdvances }));
   };
@@ -357,6 +361,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
   // Validate form
   const validateForm = (isDraft = false) => {
     const newErrors = {};
+    const { items = [], advances = [] } = bookingDetails;
     
     if (!bookingDetails.customerId) {
       newErrors.customerId = 'Please select a customer';
@@ -387,7 +392,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
         newErrors.returnDate = 'Return date must be after Delivery date';
       }
       
-      bookingDetails.items.forEach((item, index) => {
+      items.forEach((item, index) => {
         if (!item.itemId) {
           newErrors[`items.${index}.itemId`] = 'Please select an item';
         }
@@ -400,7 +405,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
         newErrors.address = 'Address is required for home delivery';
       }
       
-      bookingDetails.advances.forEach((advance, index) => {
+      advances.forEach((advance, index) => {
         if (advance.amount && isNaN(Number(advance.amount))) {
           newErrors[`advances.${index}.amount`] = 'Please enter a valid amount';
         }
@@ -426,8 +431,9 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
     }
     
     setSubmitting(true);
+    const { items = [], advances = [] } = bookingDetails;
 
-    const itemsWithFinancials = bookingDetails.items.map(item => {
+    const itemsWithFinancials = items.map(item => {
         const stockItemDetails = stockItems.find(si => si.id === item.itemId);
         if (stockItemDetails && stockItemDetails.isCollaborated) {
             return {
@@ -444,12 +450,13 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
     const totalRent = itemsWithFinancials.reduce((total, item) => total + item.calculatedPrice, 0);
     const totalCharges = Number(bookingDetails.deliveryCharge || 0) + Number(bookingDetails.otherCharges || 0);
     const totalAmount = totalRent + totalCharges;
-    const totalAdvance = bookingDetails.advances.reduce((total, advance) => total + Number(advance.amount || 0), 0);
+    const totalAdvance = advances.reduce((total, advance) => total + Number(advance.amount || 0), 0);
     const dueAmount = totalAmount - totalAdvance;
 
     const dataToSave = {
       ...bookingDetails,
       items: itemsWithFinancials,
+      advances,
       totalRent,
       totalCharges,
       totalAmount,
@@ -466,12 +473,11 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
       } else {
         const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
         const newBookingRef = push(bookingsRef);
-        const newBookingId = `B-${newBookingRef.key}`;
-        await set(newBookingRef, { ...dataToSave, createdAt: new Date().toISOString(), id: newBookingId });
+        await set(newBookingRef, { ...dataToSave, createdAt: new Date().toISOString() });
         setAlert({ show: true, type: 'success', message: 'Booking created successfully!' });
       }
 
-      await updateCustomerStats(bookingDetails.customerId, allBookings);
+      await updateStats(bookingDetails.customerId);
       
       setTimeout(() => {
         onClose();
@@ -512,15 +518,17 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
     setErrors({});
   };
 
+  const { items = [], advances = [] } = bookingDetails;
+
   // Calculate totals
   const totalRent = useMemo(() => 
-    bookingDetails.items.reduce((total, item) => total + calculateItemPrice(item), 0), 
-    [bookingDetails.items, calculateItemPrice]
+    items.reduce((total, item) => total + calculateItemPrice(item), 0), 
+    [items, calculateItemPrice]
   );
   
   const totalAdvance = useMemo(() => 
-    (bookingDetails.advances || []).reduce((total, advance) => total + Number(advance.amount || 0), 0), 
-    [bookingDetails.advances]
+    advances.reduce((total, advance) => total + Number(advance.amount || 0), 0), 
+    [advances]
   );
   
   const totalCharges = useMemo(() => 
@@ -704,7 +712,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
               </div>
               
               <div className="space-y-4">
-                {bookingDetails.items.map((item, index) => (
+                {items.map((item, index) => (
                   <motion.div 
                     key={index}
                     initial={{ opacity: 0, y: 10 }}
@@ -823,7 +831,7 @@ const AddNewBookingForm = ({ isOpen, onClose, booking }) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Advance Payments</label>
                 
-                {bookingDetails.advances.map((adv, index) => (
+                {advances.map((adv, index) => (
                   <div key={index} className="flex items-center gap-2 mb-3">
                     <InputField 
                       type="number" 

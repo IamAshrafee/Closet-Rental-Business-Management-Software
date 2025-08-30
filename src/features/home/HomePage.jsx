@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../../layout/Sidebar";
 import { useSelector } from "react-redux";
-import { ref, onValue } from "firebase/database";
-import { db } from "../../lib/firebase";
 import {
   FiUsers,
   FiBox,
@@ -20,7 +18,6 @@ import AddItemsForm from "../stock/AddItemsForm";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import EmptyState from "../../components/EmptyState";
-
 import { useFormatDate } from "../../hooks/useFormatDate";
 
 const StatCard = ({ icon, title, value, color, isLoading }) => (
@@ -78,80 +75,30 @@ const QuickActions = ({ onAddBooking, onAddCustomer, onAddItem }) => (
 );
 
 const Home = () => {
-  const [stats, setStats] = useState({
-    totalCustomers: 0,
-    totalBookings: 0,
-    totalItems: 0,
-    totalRevenue: 0,
-  });
-  const [bookings, setBookings] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [items, setItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
 
-  const userInfo = useSelector((state) => state.userLogInfo.value);
+  // Get data from Redux store
+  const { bookings, status: bookingsStatus } = useSelector((state) => state.bookings);
+  const { customers, status: customersStatus } = useSelector((state) => state.customers);
+  const { stockItems, status: stockStatus } = useSelector((state) => state.stock);
+  
   const currency = useSelector((state) => state.currency.value);
   const { formatDate } = useFormatDate();
-
-  useEffect(() => {
-    if (userInfo) {
-      setIsLoading(true);
-      const customersRef = ref(db, `users/${userInfo.uid}/customers`);
-      const bookingsRef = ref(db, `users/${userInfo.uid}/bookings`);
-      const itemsRef = ref(db, `users/${userInfo.uid}/items`);
-
-      const customersListener = onValue(customersRef, (snapshot) => {
-        const data = snapshot.val() || {};
-        const customersList = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
-        setCustomers(customersList);
-      });
-
-      const bookingsListener = onValue(bookingsRef, (snapshot) => {
-        const data = snapshot.val() || {};
-        const bookingsList = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
-        setBookings(bookingsList);
-      });
-
-      const itemsListener = onValue(itemsRef, (snapshot) => {
-        const data = snapshot.val() || {};
-        const itemsList = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
-        setItems(itemsList);
-      });
-
-      // Simulate a loading delay for demonstration purposes
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1500);
-
-      return () => {
-        // These are not functions, so we can't call them.
-        // The onValue listeners are automatically cleaned up when the component unmounts.
-      };
-    }
-  }, [userInfo]);
-
-  useEffect(() => {
-    setStats({
-      totalCustomers: customers.length,
-      totalBookings: bookings.length,
-      totalItems: items.length,
-      totalRevenue: bookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0),
-    });
-  }, [customers, bookings, items]);
-
   const navigate = useNavigate();
+
+  const isLoading = useMemo(() => 
+    bookingsStatus === 'loading' || customersStatus === 'loading' || stockStatus === 'loading',
+    [bookingsStatus, customersStatus, stockStatus]
+  );
+
+  const stats = useMemo(() => ({
+    totalCustomers: customers.length,
+    totalBookings: bookings.length,
+    totalItems: stockItems.length,
+    totalRevenue: bookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0),
+  }), [customers, bookings, stockItems]);
 
   const deliveries = useMemo(() => {
     if (!customers || customers.length === 0) return [];
@@ -236,16 +183,16 @@ const Home = () => {
           <div className="lg:col-span-2">
             <UpcomingDeliveriesCard
               bookings={deliveries}
-              onDeliveryClick={(booking) => navigate("/reminders")}
-              stockItems={items}
+              onDeliveryClick={() => navigate("/reminders")}
+              stockItems={stockItems}
               isLoading={isLoading}
             />
           </div>
           <div>
             <UpcomingReturnsCard
               bookings={returns}
-              onReturnClick={(booking) => navigate("/reminders")}
-              stockItems={items}
+              onReturnClick={() => navigate("/reminders")}
+              stockItems={stockItems}
               isLoading={isLoading}
             />
           </div>
@@ -277,18 +224,15 @@ const Home = () => {
                 >
                   <div>
                     <p className="font-medium">
-                      {
-                        customers && customers.find((c) => c.id === booking.customerId)
-                          ?.name
-                      }
+                      {customers.find((c) => c.id === booking.customerId)?.name || 'Unknown'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {booking.items.length} items
+                      {booking.items?.length || 0} items
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-medium">
-                      {currency.symbol}{booking.totalAmount.toFixed(2)}
+                      {currency.symbol}{(booking.totalAmount || 0).toFixed(2)}
                     </p>
                     <p className="text-sm text-gray-500">
                       {formatDate(booking.deliveryDate)}
@@ -316,7 +260,7 @@ const Home = () => {
       <AddItemsForm
         isOpen={isItemModalOpen}
         onClose={() => setIsItemModalOpen(false)}
-        stockItems={items}
+        stockItems={stockItems}
       />
     </Sidebar>
   );

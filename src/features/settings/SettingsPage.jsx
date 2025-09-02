@@ -6,9 +6,11 @@ import { setCompanyName } from '../../store/slices/companySlice';
 import { setDateTimeFormat } from '../../store/slices/dateTimeSlice';
 import { setCategories } from '../../store/slices/categorySlice';
 import { setColors } from '../../store/slices/colorSlice';
-import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiChevronDown, FiChevronUp, FiInfo } from 'react-icons/fi';
+import { setNotificationSettings } from '../../store/slices/notificationSlice';
+import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiChevronDown, FiChevronUp, FiInfo, FiBell } from 'react-icons/fi';
 import { ref, onValue, set } from 'firebase/database';
 import { db } from '../../lib/firebase';
+import { requestNotificationPermission, showNotification } from '../../utils/notifications';
 
 const currencies = [
   { symbol: '$', code: 'USD', name: 'US Dollar' },
@@ -41,6 +43,7 @@ const Settings = () => {
   const selectedDateTimeFormat = useSelector((state) => state.dateTime.value);
   const categories = useSelector((state) => state.category.value);
   const colors = useSelector((state) => state.color.value);
+  const notificationSettings = useSelector((state) => state.notifications.value);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,6 +60,7 @@ const Settings = () => {
 
   const [expandedSections, setExpandedSections] = useState({
     general: true,
+    notifications: true,
     categories: true,
     colors: true
   });
@@ -67,18 +71,10 @@ const Settings = () => {
       onValue(settingsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          if (data.categories) {
-            dispatch(setCategories(data.categories));
-          }
-          if (data.colors) {
-            dispatch(setColors(data.colors));
-          }
-          if (data.currency) {
-            dispatch(setCurrency(data.currency));
-          }
-          if (data.companyName) {
-            dispatch(setCompanyName(data.companyName));
-          }
+          if (data.categories) dispatch(setCategories(data.categories));
+          if (data.colors) dispatch(setColors(data.colors));
+          if (data.currency) dispatch(setCurrency(data.currency));
+          if (data.companyName) dispatch(setCompanyName(data.companyName));
           if (data.dateTimeFormat) {
             if (data.dateTimeFormat.timeFormat === 'hh:mm A') {
               data.dateTimeFormat.timeFormat = 'hh:mm a';
@@ -87,6 +83,7 @@ const Settings = () => {
             }
             dispatch(setDateTimeFormat(data.dateTimeFormat));
           }
+          if (data.notifications) dispatch(setNotificationSettings(data.notifications));
         }
         setIsLoading(false);
       }, (error) => {
@@ -101,6 +98,30 @@ const Settings = () => {
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  const handleToggleNotifications = async () => {
+    const newSettings = { ...notificationSettings, enabled: !notificationSettings.enabled };
+    dispatch(setNotificationSettings(newSettings));
+    try {
+      const notificationsRef = ref(db, `users/${userInfo.uid}/settings/notifications`);
+      await set(notificationsRef, newSettings);
+    } catch (error) {
+      setError("Failed to save notification settings.");
+      console.error(error);
+    }
+  };
+
+  const handleSendTestNotification = async () => {
+    const hasPermission = await requestNotificationPermission();
+    if (hasPermission) {
+      showNotification('Test Notification', {
+        body: 'This is a test notification from Rentiva.',
+        icon: '/todo-icon.svg',
+      });
+    } else {
+      alert('Notification permission is required. Please enable it in your browser settings.');
+    }
   };
 
   const handleCurrencyChange = async (e) => {
@@ -386,6 +407,51 @@ const Settings = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Notification Settings Section */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <button 
+              className="flex items-center justify-between w-full p-5 text-left"
+              onClick={() => toggleSection('notifications')}
+              aria-expanded={expandedSections.notifications}
+              aria-controls="notifications-settings-content"
+            >
+              <h2 className="text-xl font-semibold text-gray-800">Notification Settings</h2>
+              {expandedSections.notifications ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
+            </button>
+            
+            {expandedSections.notifications && (
+              <div id="notifications-settings-content" className="px-5 pb-5 space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-md font-medium text-gray-800">To-do Reminders</h3>
+                    <p className="text-sm text-gray-500">Enable hourly reminders for incomplete tasks.</p>
+                  </div>
+                  <button
+                    onClick={handleToggleNotifications}
+                    className={`${
+                      notificationSettings.enabled ? 'bg-indigo-600' : 'bg-gray-200'
+                    } relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                  >
+                    <span
+                      className={`${
+                        notificationSettings.enabled ? 'translate-x-6' : 'translate-x-1'
+                      } inline-block w-4 h-4 transform bg-white rounded-full transition-transform`}
+                    />
+                  </button>
+                </div>
+                <div className="border-t border-gray-200 pt-5">
+                  <button
+                    onClick={handleSendTestNotification}
+                    className="w-full sm:w-auto bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center justify-center transition-colors"
+                  >
+                    <FiBell className="mr-2" size={16} />
+                    Send Test Notification
+                  </button>
                 </div>
               </div>
             )}

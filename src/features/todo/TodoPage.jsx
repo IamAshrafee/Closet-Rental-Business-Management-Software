@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import EmptyState from '../../components/EmptyState';
 import { useFormatDate } from '../../hooks/useFormatDate';
 import CustomDropdown from '../../components/CustomDropdown';
+import { requestNotificationPermission, showNotification } from '../../utils/notifications';
 
 const AddTodoModal = ({ isOpen, onClose, userInfo }) => {
   const [newTodoTitle, setNewTodoTitle] = useState('');
@@ -27,14 +28,19 @@ const AddTodoModal = ({ isOpen, onClose, userInfo }) => {
         completed: false,
         createdAt: new Date().toISOString(),
       });
+
+      showNotification('New To-do', {
+        body: newTodoTitle.trim(),
+        tag: newTodoDescription.trim(),
+        icon: '/todo-icon.svg',
+      });
+
       onClose();
     } catch (error) {
       console.error("Error adding todo:", error);
-      // Optionally, add user-facing error feedback here
     }
   };
 
-  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setNewTodoTitle('');
@@ -139,6 +145,7 @@ const Todo = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const userInfo = useSelector((state) => state.userLogInfo.value);
+  const notificationSettings = useSelector((state) => state.notifications.value);
   const { formatDate, formatTime } = useFormatDate();
 
   useEffect(() => {
@@ -160,6 +167,39 @@ const Todo = () => {
       setTodos([]);
     }
   }, [userInfo]);
+
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
+  useEffect(() => {
+    if (!notificationSettings.enabled) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const incompleteTahmina = todos.filter(todo => todo.assignedTo === 'Tahmina' && !todo.completed).length;
+      const incompleteAshrafee = todos.filter(todo => todo.assignedTo === 'Ashrafee' && !todo.completed).length;
+
+      if (incompleteTahmina > 0 || incompleteAshrafee > 0) {
+        let body = '';
+        if (incompleteTahmina > 0) {
+          body += `Tahmina has ${incompleteTahmina} To-do. `;
+        }
+        if (incompleteAshrafee > 0) {
+          body += `Ashrafee has ${incompleteAshrafee} To-do. `;
+        }
+        body += 'Please complete your to-do.';
+
+        showNotification('Rentiva - TODO Reminder', {
+          body: body,
+          icon: '/todo-icon.svg',
+        });
+      }
+    }, 3600000); // 1 hour
+
+    return () => clearInterval(interval);
+  }, [todos, notificationSettings.enabled]);
 
   const formatDateTime = (dateString) => {
     if (!dateString) return 'N/A';

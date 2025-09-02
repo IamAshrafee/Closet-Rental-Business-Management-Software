@@ -20,16 +20,16 @@ const currencies = [
 ];
 
 const dateFormats = [
-  { label: 'MM/DD/YYYY', format: 'MM/DD/YYYY', example: '12/31/2023' },
-  { label: 'DD/MM/YYYY', format: 'DD/MM/YYYY', example: '31/12/2023' },
-  { label: 'YYYY-MM-DD', format: 'YYYY-MM-DD', example: '2023-12-31' },
-  { label: 'Day Month Year', format: 'dayMonthYear', example: '31 Dec 2023' },
-];
-
-const timeFormats = [
-  { label: 'hh:mm A (12-hour)', format: 'hh:mm A', example: '02:30 PM' },
-  { label: 'HH:mm (24-hour)', format: 'HH:mm', example: '14:30' },
-];
+    { label: 'MM/dd/yyyy', format: 'MM/dd/yyyy', example: '12/31/2023' },
+    { label: 'dd/MM/yyyy', format: 'dd/MM/yyyy', example: '31/12/2023' },
+    { label: 'yyyy-MM-dd', format: 'yyyy-MM-dd', example: '2023-12-31' },
+    { label: 'dd MMM yyyy', format: 'dd MMM yyyy', example: '31 Dec 2023' },
+  ];
+  
+  const timeFormats = [
+    { label: 'hh:mm a', format: 'hh:mm a', example: '02:30 PM' },
+    { label: 'HH:mm', format: 'HH:mm', example: '14:30' },
+  ];
 
 const capitalize = (s) => s && s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -41,6 +41,9 @@ const Settings = () => {
   const selectedDateTimeFormat = useSelector((state) => state.dateTime.value);
   const categories = useSelector((state) => state.category.value);
   const colors = useSelector((state) => state.color.value);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [newCategory, setNewCategory] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
@@ -77,9 +80,18 @@ const Settings = () => {
             dispatch(setCompanyName(data.companyName));
           }
           if (data.dateTimeFormat) {
+            if (data.dateTimeFormat.timeFormat === 'hh:mm A') {
+              data.dateTimeFormat.timeFormat = 'hh:mm a';
+              const dateTimeFormatRef = ref(db, `users/${userInfo.uid}/settings/dateTimeFormat`);
+              set(dateTimeFormatRef, data.dateTimeFormat);
+            }
             dispatch(setDateTimeFormat(data.dateTimeFormat));
           }
         }
+        setIsLoading(false);
+      }, (error) => {
+        setError(error.message);
+        setIsLoading(false);
       });
     }
   }, [userInfo, dispatch]);
@@ -91,48 +103,78 @@ const Settings = () => {
     }));
   };
 
-  const handleCurrencyChange = (e) => {
+  const handleCurrencyChange = async (e) => {
     const currency = currencies.find(c => c.code === e.target.value);
     if (currency) {
-      const currencyRef = ref(db, `users/${userInfo.uid}/settings/currency`);
-      set(currencyRef, currency);
+      try {
+        const currencyRef = ref(db, `users/${userInfo.uid}/settings/currency`);
+        await set(currencyRef, currency);
+      } catch (error) {
+        setError("Failed to save currency settings.");
+        console.error(error);
+      }
     }
   };
 
-  const handleCompanyNameChange = (e) => {
+  const handleCompanyNameChange = async (e) => {
     const newName = e.target.value;
-    const companyNameRef = ref(db, `users/${userInfo.uid}/settings/companyName`);
-    set(companyNameRef, newName);
+    try {
+      const companyNameRef = ref(db, `users/${userInfo.uid}/settings/companyName`);
+      await set(companyNameRef, newName);
+    } catch (error) {
+      setError("Failed to save company name.");
+      console.error(error);
+    }
   };
 
-  const handleDateFormatChange = (e) => {
+  const handleDateFormatChange = async (e) => {
     const newFormat = e.target.value;
     const newDateTimeFormat = { ...selectedDateTimeFormat, dateFormat: newFormat };
-    const dateTimeFormatRef = ref(db, `users/${userInfo.uid}/settings/dateTimeFormat`);
-    set(dateTimeFormatRef, newDateTimeFormat);
+    try {
+      const dateTimeFormatRef = ref(db, `users/${userInfo.uid}/settings/dateTimeFormat`);
+      await set(dateTimeFormatRef, newDateTimeFormat);
+    } catch (error) {
+      setError("Failed to save date format.");
+      console.error(error);
+    }
   };
 
-  const handleTimeFormatChange = (e) => {
+  const handleTimeFormatChange = async (e) => {
     const newFormat = e.target.value;
     const newDateTimeFormat = { ...selectedDateTimeFormat, timeFormat: newFormat };
-    const dateTimeFormatRef = ref(db, `users/${userInfo.uid}/settings/dateTimeFormat`);
-    set(dateTimeFormatRef, newDateTimeFormat);
+    try {
+      const dateTimeFormatRef = ref(db, `users/${userInfo.uid}/settings/dateTimeFormat`);
+      await set(dateTimeFormatRef, newDateTimeFormat);
+    } catch (error) {
+      setError("Failed to save time format.");
+      console.error(error);
+    }
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     const capitalizedCategory = capitalize(newCategory.trim());
     if (capitalizedCategory !== '' && !categories.includes(capitalizedCategory)) {
       const newCategories = [...categories, capitalizedCategory];
-      const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
-      set(categoriesRef, newCategories);
-      setNewCategory('');
+      try {
+        const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
+        await set(categoriesRef, newCategories);
+        setNewCategory('');
+      } catch (error) {
+        setError("Failed to add category.");
+        console.error(error);
+      }
     }
   };
 
-  const handleRemoveCategory = (categoryToRemove) => {
+  const handleRemoveCategory = async (categoryToRemove) => {
     const newCategories = categories.filter(category => category !== categoryToRemove);
-    const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
-    set(categoriesRef, newCategories);
+    try {
+      const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
+      await set(categoriesRef, newCategories);
+    } catch (error) {
+      setError("Failed to remove category.");
+      console.error(error);
+    }
   };
 
   const handleEditCategory = (category) => {
@@ -140,14 +182,19 @@ const Settings = () => {
     setEditedCategoryName(category);
   };
 
-  const handleSaveCategory = () => {
+  const handleSaveCategory = async () => {
     const capitalizedCategory = capitalize(editedCategoryName.trim());
     if (capitalizedCategory !== '' && capitalizedCategory !== editingCategory) {
       const newCategories = categories.map(c => (c === editingCategory ? capitalizedCategory : c));
-      const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
-      set(categoriesRef, newCategories);
-      setEditingCategory(null);
-      setEditedCategoryName('');
+      try {
+        const categoriesRef = ref(db, `users/${userInfo.uid}/settings/categories`);
+        await set(categoriesRef, newCategories);
+        setEditingCategory(null);
+        setEditedCategoryName('');
+      } catch (error) {
+        setError("Failed to save category.");
+        console.error(error);
+      }
     }
   };
 
@@ -156,21 +203,31 @@ const Settings = () => {
     setEditedCategoryName('');
   };
 
-  const handleAddColor = () => {
+  const handleAddColor = async () => {
     const capitalizedColorName = capitalize(newColorName.trim());
     if (capitalizedColorName !== '' && !colors.some(color => color.name === capitalizedColorName)) {
       const newColors = [...colors, { name: capitalizedColorName, hex: newColorHex }];
-      const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
-      set(colorsRef, newColors);
-      setNewColorName('');
-      setNewColorHex('#3b82f6');
+      try {
+        const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
+        await set(colorsRef, newColors);
+        setNewColorName('');
+        setNewColorHex('#3b82f6');
+      } catch (error) {
+        setError("Failed to add color.");
+        console.error(error);
+      }
     }
   };
 
-  const handleRemoveColor = (colorToRemove) => {
+  const handleRemoveColor = async (colorToRemove) => {
     const newColors = colors.filter(color => color.name !== colorToRemove.name);
-    const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
-    set(colorsRef, newColors);
+    try {
+      const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
+      await set(colorsRef, newColors);
+    } catch (error) {
+      setError("Failed to remove color.");
+      console.error(error);
+    }
   };
 
   const handleEditColor = (color) => {
@@ -179,15 +236,20 @@ const Settings = () => {
     setEditedColorHex(color.hex);
   };
 
-  const handleSaveColor = () => {
+  const handleSaveColor = async () => {
     const capitalizedColorName = capitalize(editedColorName.trim());
     if (capitalizedColorName !== '' && editedColorHex.trim() !== '') {
       const newColors = colors.map(c => (c.name === editingColor.name ? { name: capitalizedColorName, hex: editedColorHex } : c));
-      const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
-      set(colorsRef, newColors);
-      setEditingColor(null);
-      setEditedColorName('');
-      setEditedColorHex('');
+      try {
+        const colorsRef = ref(db, `users/${userInfo.uid}/settings/colors`);
+        await set(colorsRef, newColors);
+        setEditingColor(null);
+        setEditedColorName('');
+        setEditedColorHex('');
+      } catch (error) {
+        setError("Failed to save color.");
+        console.error(error);
+      }
     }
   };
 
@@ -196,6 +258,16 @@ const Settings = () => {
     setEditedColorName('');
     setEditedColorHex('');
   };
+
+  if (isLoading) {
+    return (
+      <Sidebar>
+        <div className="flex justify-center items-center h-full">
+          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-indigo-500"></div>
+        </div>
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar>
@@ -208,6 +280,16 @@ const Settings = () => {
             </p>
           </div>
         </div>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+            <strong className="font-bold">Error:</strong>
+            <span className="block sm:inline"> {error}</span>
+            <span className="absolute top-0 bottom-0 right-0 px-4 py-3" onClick={() => setError(null)}>
+              <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+            </span>
+          </div>
+        )}
 
         <div className="space-y-6 px-4 md:px-0">
           {/* General Settings Section */}

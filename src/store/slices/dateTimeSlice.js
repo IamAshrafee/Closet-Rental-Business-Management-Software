@@ -2,8 +2,8 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   value: {
-    dateFormat: 'MM/DD/YYYY',
-    timeFormat: 'hh:mm A',
+    dateFormat: 'MM/dd/yyyy',
+    timeFormat: 'hh:mm a',
     locale: 'en-US',
   },
 };

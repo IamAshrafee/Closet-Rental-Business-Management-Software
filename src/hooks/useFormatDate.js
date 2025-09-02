@@ -10,6 +10,7 @@ export const useFormatDate = () => {
     try {
       return format(date, dateTimeFormat.dateFormat);
     } catch (error) {
+      console.error("Error formatting date:", error);
       return date.toLocaleDateString(dateTimeFormat.locale);
     }
   };
@@ -20,6 +21,7 @@ export const useFormatDate = () => {
     try {
       return format(date, dateTimeFormat.timeFormat);
     } catch (error) {
+      console.error("Error formatting time:", error);
       return date.toLocaleTimeString(dateTimeFormat.locale);
     }
   };
